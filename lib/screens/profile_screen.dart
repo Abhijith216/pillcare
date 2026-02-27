@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import '../services/medication_store.dart';
+import 'settings/notifications_page.dart';
+import 'settings/smart_dispenser_page.dart';
+import 'settings/medication_schedule_page.dart';
+import 'settings/privacy_security_page.dart';
+import 'settings/help_support_page.dart';
+import 'settings/about_page.dart';
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SETTINGS / PROFILE SCREEN — Futuristic Healthcare Profile
@@ -450,94 +456,99 @@ class _ProfileScreenState extends State<ProfileScreen>
   //  NOTIFICATION TOGGLE
   // ═══════════════════════════════════════════════════════════════
   Widget _buildNotificationToggle(double glow) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(Icons.notifications_outlined,
-                size: 20, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              'Notifications',
-              style: GoogleFonts.manrope(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E293B),
-              ),
-            ),
-          ),
-          // Custom neon toggle
-          GestureDetector(
-            onTap: () => setState(() => _notificationsOn = !_notificationsOn),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              width: 52,
-              height: 30,
-              padding: const EdgeInsets.all(3),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(15),
-                color: _notificationsOn
-                    ? const Color(0xFF135BEC)
-                    : const Color(0xFFE2E8F0),
-                boxShadow: _notificationsOn
-                    ? [
-                        BoxShadow(
-                          color: const Color(0xFF135BEC)
-                              .withValues(alpha: 0.25 + glow * 0.15),
-                          blurRadius: 8 + glow * 4,
-                          spreadRadius: -1,
-                        ),
-                      ]
-                    : [],
+                color: const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: AnimatedAlign(
+              child: const Icon(Icons.notifications_outlined,
+                  size: 20, color: Color(0xFF64748B)),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                'Notifications',
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ),
+            // Custom neon toggle
+            GestureDetector(
+              onTap: () {
+                setState(() => _notificationsOn = !_notificationsOn);
+              },
+              child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,
-                alignment: _notificationsOn
-                    ? Alignment.centerRight
-                    : Alignment.centerLeft,
-                child: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 4,
-                        offset: const Offset(0, 1),
-                      ),
-                    ],
+                width: 52,
+                height: 30,
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  color: _notificationsOn
+                      ? const Color(0xFF135BEC)
+                      : const Color(0xFFE2E8F0),
+                  boxShadow: _notificationsOn
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF135BEC)
+                                .withValues(alpha: 0.25 + glow * 0.15),
+                            blurRadius: 8 + glow * 4,
+                            spreadRadius: -1,
+                          ),
+                        ]
+                      : [],
+                ),
+                child: AnimatedAlign(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                  alignment: _notificationsOn
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
+                  child: Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 1),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -546,7 +557,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   //  SMART DISPENSER CARD
   // ═══════════════════════════════════════════════════════════════
   Widget _buildSmartDispenserCard(double glow) {
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmartDispenserPage())),
+      child: Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
@@ -616,6 +629,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -624,10 +638,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ═══════════════════════════════════════════════════════════════
   List<Widget> _buildMenuItems() {
     final items = [
-      _MenuItem(Icons.calendar_month_outlined, 'Medication Schedule'),
-      _MenuItem(Icons.shield_outlined, 'Privacy & Security'),
-      _MenuItem(Icons.help_outline_rounded, 'Help & Support'),
-      _MenuItem(Icons.info_outline_rounded, 'About PillCare'),
+      _MenuItem(Icons.calendar_month_outlined, 'Medication Schedule', const MedicationSchedulePage()),
+      _MenuItem(Icons.shield_outlined, 'Privacy & Security', const PrivacySecurityPage()),
+      _MenuItem(Icons.help_outline_rounded, 'Help & Support', const HelpSupportPage()),
+      _MenuItem(Icons.info_outline_rounded, 'About PillCare', const AboutPage()),
     ];
 
     return items.asMap().entries.map((entry) {
@@ -663,7 +677,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () {},
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.page)),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                     horizontal: 18, vertical: 16),
@@ -1105,7 +1119,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
 class _MenuItem {
   final IconData icon;
   final String label;
-  const _MenuItem(this.icon, this.label);
+  final Widget page;
+  const _MenuItem(this.icon, this.label, this.page);
 }
 
 // ═══════════════════════════════════════════════════════════════════
