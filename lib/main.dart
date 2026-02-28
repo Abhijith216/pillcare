@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/caregiver/caregiver_home.dart';
 
 void main() {
   runApp(const PillCareApp());
@@ -31,6 +32,7 @@ class PillCareApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const HomeScreen(),
+        '/caregiver': (context) => const CaregiverHome(),
       },
     );
   }

@@ -172,7 +172,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Please sign in to continue managing\nyour medication.',
+                        _isPatient
+                            ? 'Please sign in to continue managing\nyour medication.'
+                            : 'Please sign in to manage\nyour patients\' care.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.manrope(
                           fontSize: 14,
@@ -388,7 +390,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: ElevatedButton(
                             onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/home');
+                              Navigator.pushReplacementNamed(
+                                context,
+                                _isPatient ? '/home' : '/caregiver',
+                              );
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
