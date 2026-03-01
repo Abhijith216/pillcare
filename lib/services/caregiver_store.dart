@@ -38,7 +38,7 @@ class CaregiverStore extends ChangeNotifier {
   void removePatient(String id) {
     _patients.removeWhere((p) => p.id == id);
     _alerts.removeWhere((a) => a.patientId == id);
-    _messages.removeWhere((m) => m.patientId == id);
+    _messages.removeWhere((m) => m.senderId == id);
     notifyListeners();
   }
 
@@ -65,15 +65,16 @@ class CaregiverStore extends ChangeNotifier {
 
   // --- Messages ---
   List<ChatMessage> messagesForPatient(String patientId) =>
-      _messages.where((m) => m.patientId == patientId).toList()
+      _messages.where((m) => m.senderId == patientId || m.senderId == 'caregiver_1').toList()
         ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
 
   void sendMessage(String patientId, String text, {bool isCaregiver = true}) {
     _messages.add(ChatMessage(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
-      patientId: patientId,
+      senderId: isCaregiver ? 'caregiver_1' : patientId,
+      senderName: isCaregiver ? 'You' : 'Patient',
       text: text,
-      isCaregiver: isCaregiver,
+      isFromCaregiver: isCaregiver,
       timestamp: DateTime.now(),
     ));
     notifyListeners();
@@ -186,17 +187,17 @@ class CaregiverStore extends ChangeNotifier {
   List<ChatMessage> _defaultMessages() {
     final now = DateTime.now();
     return [
-      ChatMessage(id: 'c1', patientId: 'p1', text: 'Good morning! Did you take your Metformin today?', isCaregiver: true,
+      ChatMessage(id: 'c1', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Good morning! Did you take your Metformin today?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 6))),
-      ChatMessage(id: 'c2', patientId: 'p1', text: 'Yes, I took it after breakfast. Thank you for checking!', isCaregiver: false,
+      ChatMessage(id: 'c2', senderId: 'p1', senderName: 'Rajesh', text: 'Yes, I took it after breakfast. Thank you for checking!', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 5, minutes: 45))),
-      ChatMessage(id: 'c3', patientId: 'p2', text: 'Hi Anita, I noticed you missed your afternoon dose. Everything okay?', isCaregiver: true,
+      ChatMessage(id: 'c3', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Hi Anita, I noticed you missed your afternoon dose. Everything okay?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 2))),
-      ChatMessage(id: 'c4', patientId: 'p2', text: 'Oh I forgot! Taking it now. Thanks for the reminder.', isCaregiver: false,
+      ChatMessage(id: 'c4', senderId: 'p2', senderName: 'Anita', text: 'Oh I forgot! Taking it now. Thanks for the reminder.', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 1, minutes: 50))),
-      ChatMessage(id: 'c5', patientId: 'p4', text: 'Meena ji, your insulin supply is running low. Shall I arrange a refill?', isCaregiver: true,
+      ChatMessage(id: 'c5', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Meena ji, your insulin supply is running low. Shall I arrange a refill?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 4))),
-      ChatMessage(id: 'c6', patientId: 'p4', text: 'Yes please, that would be helpful.', isCaregiver: false,
+      ChatMessage(id: 'c6', senderId: 'p4', senderName: 'Meena', text: 'Yes please, that would be helpful.', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 3, minutes: 30))),
     ];
   }

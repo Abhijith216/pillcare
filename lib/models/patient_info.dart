@@ -64,16 +64,18 @@ enum AlertType { missedDose, dispenserError, refillNeeded }
 
 class ChatMessage {
   final String id;
-  final String patientId;
+  final String senderId;
+  final String senderName;
   final String text;
-  final bool isCaregiver;
+  final bool isFromCaregiver;
   final DateTime timestamp;
 
   ChatMessage({
     required this.id,
-    required this.patientId,
+    required this.senderId,
+    this.senderName = '',
     required this.text,
-    required this.isCaregiver,
+    required this.isFromCaregiver,
     required this.timestamp,
   });
 }

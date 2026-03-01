@@ -215,7 +215,7 @@ class _CaregiverChatScreenState extends State<CaregiverChatScreen> {
   }
 
   Widget _bubble(ChatMessage msg) {
-    final isMe = msg.isCaregiver;
+    final isMe = msg.isFromCaregiver;
     final time = '${msg.timestamp.hour.toString().padLeft(2, '0')}:${msg.timestamp.minute.toString().padLeft(2, '0')}';
 
     return Align(

@@ -3,10 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'home_content.dart';
 import 'schedule_screen.dart';
 import 'history_screen.dart';
+import 'alerts_screen.dart';
 import 'profile_screen.dart';
+import '../models/medication.dart';
 import 'add_medication_sheet.dart';
 import 'ai_chat_screen.dart';
-import '../models/medication.dart';
 import '../services/medication_store.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -45,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     const HomeContent(),
     const ScheduleScreen(),
     const HistoryScreen(),
+    const AlertsScreen(),
     const ProfileScreen(),
   ];
 
@@ -53,7 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const AddMedicationSheet(),
+      builder: (_) => AddMedicationSheet(),
     );
     if (result != null) {
       MedicationStore().add(result);
@@ -196,7 +198,8 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
               _buildNavItem(0, Icons.home_rounded, Icons.home_outlined, 'Home'),
               _buildNavItem(1, Icons.calendar_month, Icons.calendar_month_outlined, 'Schedule'),
               _buildNavItem(2, Icons.history_rounded, Icons.history_rounded, 'History'),
-              _buildNavItem(3, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+              _buildNavItem(3, Icons.notifications_active_rounded, Icons.notifications_none_rounded, 'Alerts'),
+              _buildNavItem(4, Icons.settings_rounded, Icons.settings_outlined, 'Settings'),
             ],
           ),
         ),
