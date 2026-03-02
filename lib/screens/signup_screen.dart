@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/auth_service.dart';
@@ -15,6 +16,17 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
+  
+  // Additional fields for patients
+  final _heightController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _caregiverNameController = TextEditingController();
+  final _caregiverEmailController = TextEditingController();
+
+  // Additional fields for caregiver
+  final _phoneController = TextEditingController();
+  final _patientIdController = TextEditingController();
+
   final _auth = AuthService();
   bool _isPatient = true;
   bool _obscurePassword = true;
@@ -46,6 +58,12 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
     _emailController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
+    _heightController.dispose();
+    _weightController.dispose();
+    _caregiverNameController.dispose();
+    _caregiverEmailController.dispose();
+    _phoneController.dispose();
+    _patientIdController.dispose();
     super.dispose();
   }
 
@@ -54,6 +72,13 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     final confirm = _confirmController.text;
+    
+    final height = _heightController.text.trim();
+    final weight = _weightController.text.trim();
+    final caregiverName = _caregiverNameController.text.trim();
+    final caregiverEmail = _caregiverEmailController.text.trim();
+    final phone = _phoneController.text.trim();
+    final linkedPatientId = _patientIdController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
       _showError('Please fill in all fields.');
@@ -75,6 +100,12 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
         email: email,
         password: password,
         role: _isPatient ? 'patient' : 'caregiver',
+        height: _isPatient ? height : null,
+        weight: _isPatient ? weight : null,
+        caregiverName: _isPatient ? caregiverName : null,
+        caregiverEmail: _isPatient ? caregiverEmail : null,
+        phone: !_isPatient ? phone : null,
+        linkedPatientId: !_isPatient ? linkedPatientId : null,
       );
 
       if (!mounted) return;
@@ -225,33 +256,100 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                               // Email
                               _buildField(
                                 controller: _emailController,
-                                label: 'Email Address',
-                                hint: 'Enter your email',
+                                label: 'Account Email',
+                                hint: 'Your email address',
                                 icon: Icons.email_outlined,
                                 keyboardType: TextInputType.emailAddress,
                               ),
                               const SizedBox(height: 14),
 
+                              if (_isPatient) ...[
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildField(
+                                        controller: _heightController,
+                                        label: 'Height',
+                                        hint: 'e.g. 170 cm',
+                                        icon: Icons.height,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: _buildField(
+                                        controller: _weightController,
+                                        label: 'Weight',
+                                        hint: 'e.g. 65 kg',
+                                        icon: Icons.monitor_weight_outlined,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+                                _buildField(
+                                  controller: _caregiverNameController,
+                                  label: 'Caregiver Name',
+                                  hint: 'Enter caregiver name',
+                                  icon: Icons.person_outline,
+                                ),
+                                const SizedBox(height: 14),
+                                _buildField(
+                                  controller: _caregiverEmailController,
+                                  label: 'Caregiver Email',
+                                  hint: 'Enter caregiver email',
+                                  icon: Icons.email_outlined,
+                                  keyboardType: TextInputType.emailAddress,
+                                ),
+                                const SizedBox(height: 14),
+                              ] else ...[
+                                // Phone
+                                _buildField(
+                                  controller: _phoneController,
+                                  label: 'Your Phone',
+                                  hint: 'Your contact number',
+                                  icon: Icons.phone_outlined,
+                                  keyboardType: TextInputType.phone,
+                                ),
+                                const SizedBox(height: 14),
+                              ],
+
                               // Password
                               _buildField(
                                 controller: _passwordController,
                                 label: 'Password',
-                                hint: 'Min 6 characters',
+                                hint: 'Create a password',
                                 icon: Icons.lock_outline,
                                 obscure: _obscurePassword,
                                 toggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
-                              const SizedBox(height: 14),
+                              
+                              if (_isPatient) ...[
+                                const SizedBox(height: 14),
+                                // Confirm Password
+                                _buildField(
+                                  controller: _confirmController,
+                                  label: 'Confirm Password',
+                                  hint: 'Re-enter password',
+                                  icon: Icons.lock_outline,
+                                  obscure: _obscureConfirm,
+                                  toggleObscure: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                                ),
+                              ],
 
-                              // Confirm Password
-                              _buildField(
-                                controller: _confirmController,
-                                label: 'Confirm Password',
-                                hint: 'Re-enter password',
-                                icon: Icons.lock_outline,
-                                obscure: _obscureConfirm,
-                                toggleObscure: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                              ),
+                              if (!_isPatient) ...[
+                                const SizedBox(height: 24),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text('PATIENT CONNECTION', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF135BEC))),
+                                ),
+                                const SizedBox(height: 8),
+                                _buildDashedField(
+                                  controller: _patientIdController,
+                                  hint: 'Link Patient ID (e.g. PC-12345)',
+                                  icon: Icons.person_add_outlined,
+                                ),
+                              ],
+                              
                               const SizedBox(height: 24),
 
                               // Sign Up button
@@ -385,8 +483,8 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF1A1F36))),
-        const SizedBox(height: 6),
+        Text(label.toUpperCase(), style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w800, color: const Color(0xFF6B7280), letterSpacing: 0.5)),
+        const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
             color: const Color(0xFFF5F6FA),
@@ -427,6 +525,71 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
       ],
     );
   }
+
+  Widget _buildDashedField({
+    required TextEditingController controller,
+    required String hint,
+    required IconData icon,
+  }) {
+    return CustomPaint(
+      painter: _DashedBorderPainter(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFF135BEC).withValues(alpha: 0.04), // slight blue tint
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: TextField(
+          controller: controller,
+          style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFF1A1F36)),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFFB0B7C3)),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.only(left: 14, right: 10),
+              child: Icon(icon, color: const Color(0xFF135BEC), size: 20),
+            ),
+            prefixIconConstraints: const BoxConstraints(minWidth: 44),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double strokeWidth;
+  final double gap;
+  final double radius;
+
+  _DashedBorderPainter({this.color = const Color(0xFF135BEC), this.strokeWidth = 1.5, this.gap = 5.0, this.radius = 14.0});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    var paint = Paint()
+      ..color = color.withValues(alpha: 0.3)
+      ..strokeWidth = strokeWidth
+      ..style = PaintingStyle.stroke;
+
+    var path = Path()
+      ..addRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 0, size.width, size.height), Radius.circular(radius)));
+
+    var dashPath = Path();
+    double distance = 0.0;
+    for (PathMetric measurePath in path.computeMetrics()) {
+      while (distance < measurePath.length) {
+        dashPath.addPath(measurePath.extractPath(distance, distance + gap), Offset.zero);
+        distance += gap * 2;
+      }
+      distance = 0.0;
+    }
+    canvas.drawPath(dashPath, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // ============================================================

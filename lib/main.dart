@@ -4,7 +4,11 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/caregiver/caregiver_home.dart';
 
-void main() {
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
   runApp(const PillCareApp());
 }
 

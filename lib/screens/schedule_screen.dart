@@ -10,7 +10,8 @@ import '../services/medication_store.dart';
 // ═══════════════════════════════════════════════════════════════════════
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+  final bool scrollToRefill;
+  const ScheduleScreen({super.key, this.scrollToRefill = false});
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -29,6 +30,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
 
   // For calendar month navigation transition
   bool _isMonthTransitioning = false;
+  final ScrollController _scrollController = ScrollController();
+
+  // Track low stock alerts sent to Caregiver this session
+  final Set<String> _lowStockAlertSentList = {};
 
   @override
   void initState() {
@@ -52,6 +57,21 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       duration: const Duration(milliseconds: 400),
     );
     _slideController.value = 1.0; // start fully visible
+
+    if (widget.scrollToRefill) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Wait a bit for animations to settle
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (_scrollController.hasClients) {
+            _scrollController.animateTo(
+              _scrollController.position.maxScrollExtent,
+              duration: const Duration(milliseconds: 800),
+              curve: Curves.easeOutQuart,
+            );
+          }
+        });
+      });
+    }
   }
 
   @override
@@ -60,6 +80,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     _glowController.dispose();
     _slideController.dispose();
     _sparkController?.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -146,11 +167,52 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     });
   }
 
-  void _doRefill(Medication med) {
-    final store = MedicationStore();
-    final newCount = math.min(med.refillCount + 5, med.refillTotal);
-    store.updateRefillCount(med.id, newCount);
-    _triggerSpark(med.id);
+  Future<void> _requestRefill(Medication med) async {
+    // 1. Notify user that request is sent
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Refill request for ${med.name} sent to caregiver.'),
+        backgroundColor: const Color(0xFF135BEC),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+
+    // 2. Simulate caregiver receiving and approving request (e.g. 3 seconds)
+    await Future.delayed(const Duration(seconds: 3));
+
+    if (!mounted) return;
+
+    // 3. Show Approval Dialog
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle_rounded, color: Color(0xFF16A34A)),
+            const SizedBox(width: 8),
+            Text('Request Approved', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, fontSize: 18, color: const Color(0xFF1E293B))),
+          ],
+        ),
+        content: Text(
+          'Your caregiver has approved the refill for ${med.name}. The stock will now be updated automatically.',
+          style: GoogleFonts.manrope(fontSize: 14, color: const Color(0xFF475569)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              final store = MedicationStore();
+              final newCount = math.min(med.refillCount + 15, med.refillTotal); // Giving 15 pills per refill request
+              store.updateRefillCount(med.id, newCount);
+              _triggerSpark(med.id);
+            },
+            child: Text('OKAY', style: GoogleFonts.manrope(fontWeight: FontWeight.w800, color: const Color(0xFF135BEC))),
+          ),
+        ],
+      ),
+    );
   }
 
   // ═══════════════════════════════════════════════════════════════
@@ -177,6 +239,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             return SafeArea(
               bottom: false,
               child: SingleChildScrollView(
+                controller: _scrollController,
                 physics: const BouncingScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -244,9 +307,13 @@ class _ScheduleScreenState extends State<ScheduleScreen>
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: const LinearGradient(
+          colors: [Color(0xFFF8FAFC), Color(0xFFEFF6FF)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF135BEC).withValues(alpha: 0.04 + glow * 0.02),
@@ -507,6 +574,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
           ...meds.asMap().entries.map((entry) {
             final i = entry.key;
             final med = entry.value;
+            final isLast = i == meds.length - 1;
 
             return TweenAnimationBuilder<double>(
               key: ValueKey('sched_${med.id}_$_selectedDay'),
@@ -519,7 +587,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                   child: Opacity(opacity: val, child: child),
                 );
               },
-              child: _buildMedTimelineCard(med, pulse),
+              child: _buildMedTimelineCard(med, pulse, isLast),
             );
           }),
 
@@ -549,7 +617,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     );
   }
 
-  Widget _buildMedTimelineCard(Medication med, double pulse) {
+  Widget _buildMedTimelineCard(Medication med, double pulse, bool isLast) {
     // Progress towards dose time
     final currentHour = TimeOfDay.now().hour + (TimeOfDay.now().minute / 60);
     final medHour = _parseHour(med.time).toDouble();
@@ -557,27 +625,61 @@ class _ScheduleScreenState extends State<ScheduleScreen>
         ? 1.0
         : (currentHour >= medHour ? 1.0 : (currentHour / medHour).clamp(0.0, 1.0));
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: med.takenToday
-              ? const Color(0xFFBBF7D0)
-              : const Color(0xFFF1F5F9),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
+    return IntrinsicHeight(
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Vertical Timeline Connector
+          SizedBox(
+            width: 32,
+            child: Column(
+              children: [
+                Container(
+                  width: 14,
+                  height: 14,
+                  margin: const EdgeInsets.only(top: 24),
+                  decoration: BoxDecoration(
+                    color: med.takenToday ? const Color(0xFF16A34A) : Colors.white,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: med.takenToday ? const Color(0xFF16A34A) : const Color(0xFFCBD5E1),
+                      width: 3,
+                    ),
+                  ),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      color: med.takenToday ? const Color(0xFF16A34A).withValues(alpha: 0.3) : const Color(0xFFE2E8F0),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          // Info card
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: med.takenToday
+                      ? const Color(0xFFBBF7D0)
+                      : const Color(0xFFF1F5F9),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
           // Pill icon with colored background
           Container(
             width: 48,
@@ -677,6 +779,10 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
         ],
       ),
+    ),
+  ),
+],
+      ),
     );
   }
 
@@ -770,6 +876,28 @@ class _ScheduleScreenState extends State<ScheduleScreen>
     } else {
       statusColor = const Color(0xFFDC2626);
       statusLabel = '⚠ $daysLeft DAYS LEFT';
+    }
+
+    // Automated low stock alert to caregiver if <= 5
+    if (med.refillCount <= 5 && !_lowStockAlertSentList.contains(med.id)) {
+      _lowStockAlertSentList.add(med.id);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Caregiver Alerted: ${med.name} stock is critically low (${med.refillCount} pills left).')),
+              ],
+            ),
+            backgroundColor: const Color(0xFFDC2626), // red warning
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      });
     }
 
     return Stack(
@@ -884,30 +1012,34 @@ class _ScheduleScreenState extends State<ScheduleScreen>
               // Action buttons row
               Row(
                 children: [
-                  // Update Stock button
+                  // Update Stock button (Manual increment)
                   Expanded(
                     child: GestureDetector(
-                      onTap: () => _doRefill(med),
+                      onTap: () {
+                        // Allow a simple manual +1 increment locally without caregiver for minor tracking
+                        final store = MedicationStore();
+                        store.updateRefillCount(med.id, math.min(med.refillCount + 1, med.refillTotal));
+                      },
                       child: Container(
-                        height: 40,
+                        height: 48,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF8FAFC),
-                          borderRadius: BorderRadius.circular(10),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
                           border:
-                              Border.all(color: const Color(0xFFE2E8F0)),
+                              Border.all(color: const Color(0xFFCBD5E1)),
                         ),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             const Icon(Icons.add_rounded,
-                                size: 16, color: Color(0xFF64748B)),
-                            const SizedBox(width: 4),
+                                size: 18, color: Color(0xFF475569)),
+                            const SizedBox(width: 6),
                             Text(
                               'UPDATE STOCK',
                               style: GoogleFonts.manrope(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF64748B),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF475569),
                                 letterSpacing: 0.3,
                               ),
                             ),
@@ -916,37 +1048,34 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  // Refill button
+                  const SizedBox(width: 12),
                   GestureDetector(
-                    onTap: () => _doRefill(med),
+                    onTap: () => _requestRefill(med),
                     child: Container(
-                      height: 40,
+                      height: 48,
                       padding: const EdgeInsets.symmetric(horizontal: 24),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
-                        ),
-                        borderRadius: BorderRadius.circular(10),
+                        color: const Color(0xFF135BEC),
+                        borderRadius: BorderRadius.circular(14),
                         boxShadow: [
                           BoxShadow(
                             color: const Color(0xFF135BEC)
-                                .withValues(alpha: 0.25),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                                .withValues(alpha: 0.3 + glow * 0.1),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.refresh_rounded,
-                              size: 15, color: Colors.white),
-                          const SizedBox(width: 4),
+                          const Icon(Icons.send_rounded,
+                              size: 16, color: Colors.white),
+                          const SizedBox(width: 6),
                           Text(
-                            'REFILL',
+                            'REQUEST REFILL',
                             style: GoogleFonts.manrope(
-                              fontSize: 12,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                               letterSpacing: 0.5,
@@ -1028,12 +1157,12 @@ class _ScheduleScreenState extends State<ScheduleScreen>
             ),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 8),
         // Bar
         SizedBox(
-          height: 8,
+          height: 12,
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(6),
             child: Stack(
               children: [
                 Container(color: const Color(0xFFF1F5F9)),
@@ -1052,7 +1181,7 @@ class _ScheduleScreenState extends State<ScheduleScreen>
                               barColor,
                             ],
                           ),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(6),
                           boxShadow: [
                             BoxShadow(
                               color: barColor

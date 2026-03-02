@@ -19,6 +19,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateMixin {
   int _currentNavIndex = 0;
+  bool _scrollToRefill = false;
   late final AnimationController _pulseController;
   late final Animation<double> _pulseAnimation;
 
@@ -42,13 +43,29 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
 
 // _HomeScreenState class body continues below
 
-  final List<Widget> _screens = [
-    const HomeContent(),
-    const ScheduleScreen(),
-    const HistoryScreen(),
-    const AlertsScreen(),
-    const ProfileScreen(),
-  ];
+  Widget _buildCurrentScreen() {
+    switch (_currentNavIndex) {
+      case 0:
+        return HomeContent(
+          onNavigateToSchedule: () {
+            setState(() {
+              _currentNavIndex = 1;
+              _scrollToRefill = true;
+            });
+          },
+        );
+      case 1:
+        return ScheduleScreen(scrollToRefill: _scrollToRefill);
+      case 2:
+        return const HistoryScreen();
+      case 3:
+        return const AlertsScreen();
+      case 4:
+        return const ProfileScreen();
+      default:
+        return const SizedBox();
+    }
+  }
 
   void _openAddMedicationSheet() async {
     final result = await showModalBottomSheet<Medication>(
@@ -72,45 +89,16 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 250),
             child: KeyedSubtree(
-              key: ValueKey(_currentNavIndex),
-              child: _screens[_currentNavIndex],
+              key: ValueKey('$_currentNavIndex-$_scrollToRefill'),
+              child: _buildCurrentScreen(),
             ),
           ),
 
-          // FAB (on Home and Schedule)
-          if (_currentNavIndex == 0 || _currentNavIndex == 1)
-            Positioned(
-              bottom: 90,
-              right: 20,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF135BEC).withValues(alpha: 0.4),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.add, color: Colors.white, size: 32),
-                  onPressed: _openAddMedicationSheet,
-                ),
-              ),
-            ),
 
           // Floating AI Chatbot Icon
           Positioned(
             bottom: 90,
-            left: 20,
+            right: 20,
             child: AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
@@ -211,7 +199,12 @@ class _HomeScreenState extends State<HomeScreen> with SingleTickerProviderStateM
     final isActive = _currentNavIndex == index;
     return Expanded(
       child: InkWell(
-        onTap: () => setState(() => _currentNavIndex = index),
+        onTap: () {
+          setState(() {
+            _currentNavIndex = index;
+            if (index == 1) _scrollToRefill = false;
+          });
+        },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

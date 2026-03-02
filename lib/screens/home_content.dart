@@ -6,10 +6,13 @@ import '../services/medication_store.dart';
 import '../services/ai_service.dart';
 import 'add_medication_sheet.dart';
 import 'ai_chat_screen.dart';
-import 'refill_counter_widget.dart';
+import 'schedule_screen.dart';
+import 'all_medications_screen.dart';
+import 'ai_health_insights_card.dart';
 
 class HomeContent extends StatefulWidget {
-  const HomeContent({super.key});
+  final VoidCallback? onNavigateToSchedule;
+  const HomeContent({super.key, this.onNavigateToSchedule});
 
   @override
   State<HomeContent> createState() => _HomeContentState();
@@ -38,57 +41,87 @@ class _HomeContentState extends State<HomeContent> {
               const SizedBox(height: 24),
               _MedicationsSection(),
               const SizedBox(height: 28),
-              // ──── Futuristic Refill Counter ────
+              // ──── Futuristic Refill Counter Button ────
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Refill Status',
-                            style: GoogleFonts.manrope(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: const Color(0xFF1E293B),
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFEFF6FF),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.auto_awesome, size: 13, color: Color(0xFF7C3AED)),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Live',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: const Color(0xFF7C3AED),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: () {
+                    if (widget.onNavigateToSchedule != null) {
+                      widget.onNavigateToSchedule!();
+                    } else {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ScheduleScreen(scrollToRefill: true)),
+                      );
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF135BEC).withValues(alpha: 0.3),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 14),
-                    const RefillCounterWidget(),
-                  ],
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.inventory_2_rounded,
+                              color: Colors.white, size: 28),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Refill Counter',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w800,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Manage and refill your medications',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
               _buildStatsGrid(store),
+              const SizedBox(height: 24),
+              const AiHealthInsightsCard(),
               const SizedBox(height: 100),
             ],
           ),
@@ -113,147 +146,44 @@ class _HomeContentState extends State<HomeContent> {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Welcome back', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFFBFD4FF))),
+                      Text('Good Morning, ayisha', style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.15)),
                       const SizedBox(height: 4),
-                      Text('Good Morning,\nGuest', style: GoogleFonts.manrope(fontSize: 30, fontWeight: FontWeight.w800, color: Colors.white, height: 1.15)),
+                      Text("Today's Schedule", style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFFBFD4FF))),
                     ]),
-                    Container(
-                      padding: const EdgeInsets.all(3),
-                      decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                      child: CircleAvatar(
-                        radius: 24,
-                        backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        backgroundImage: const NetworkImage('https://lh3.googleusercontent.com/aida-public/AB6AXuD-OLmc3MWAgQM2NWdoEk9NNRpMJ2Vt3SEfLDbdaLMXD-SlayR74-IVADTI-nw_5Xt5jMPFyWVLovr38CkL2nikLFxTx3Unqz4ycg10E9LTlOyCn8nM1IxbH9eVP8ywPOrV7NUrsjzs1uZzQBaS-xRXUqUF4QBgNCJIzyi8HKbxdOtMPsLt2pGPALgfxqbjbAZ5e7MOWEeEhPBNaqqgXI4pEOz72LC6LNS2yfIq0xfB39fTdhsUeSA3ajvfsUqseQRdwWayL8qQMKg'),
-                      ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        SizedBox(
+                          width: 64, height: 64,
+                          child: CustomPaint(
+                            painter: _CircularProgressPainter(progress: pct / 100, strokeWidth: 4, backgroundColor: Colors.white.withValues(alpha: 0.2), progressColor: Colors.white),
+                          ),
+                        ),
+                        Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text('$pct%', style: GoogleFonts.manrope(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white, height: 1.0)),
+                            const SizedBox(height: 2),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4)),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.check, color: Colors.white, size: 8),
+                                  const SizedBox(width: 2),
+                                  Text('BOOST', style: GoogleFonts.manrope(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: 24),
-                // Daily Adherence Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: 0.1))),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text('Daily Adherence', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFFBFD4FF))),
-                        const SizedBox(height: 4),
-                        Text('$pct%', style: GoogleFonts.manrope(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
-                        const SizedBox(height: 4),
-                        Row(children: [
-                          const Icon(Icons.trending_up, color: Color(0xFF86EFAC), size: 14),
-                          const SizedBox(width: 4),
-                          Text('+5% from last week', style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFF86EFAC))),
-                        ]),
-                      ]),
-                      SizedBox(
-                        width: 64, height: 64,
-                        child: CustomPaint(
-                          painter: _CircularProgressPainter(progress: pct / 100, strokeWidth: 4, backgroundColor: Colors.white.withValues(alpha: 0.2), progressColor: Colors.white),
-                          child: const Center(child: Icon(Icons.check_circle, color: Colors.white, size: 24)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // AI Health Trends Card
-                GestureDetector(
-                  onTap: () async {
-                    if (_aiInsight == null && !_loadingInsight) {
-                      setState(() => _loadingInsight = true);
-                      final insight = await AiService().generateHealthInsights();
-                      setState(() {
-                        _aiInsight = insight;
-                        _loadingInsight = false;
-                      });
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.white.withValues(alpha: 0.05))),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Row(children: [
-                        const Icon(Icons.auto_awesome, color: Color(0xFF93C5FD), size: 18),
-                        const SizedBox(width: 8),
-                        Text('AI HEALTH TRENDS', style: GoogleFonts.manrope(fontSize: 13, fontWeight: FontWeight.w800, color: const Color(0xFFBFD4FF), letterSpacing: 0.5)),
-                        const Spacer(),
-                        GestureDetector(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiChatScreen())),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              const Icon(Icons.chat_bubble_outline, color: Colors.white, size: 13),
-                              const SizedBox(width: 4),
-                              Text('Chat', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
-                            ]),
-                          ),
-                        ),
-                      ]),
-                      const SizedBox(height: 16),
-                      if (_loadingInsight)
-                        Center(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            child: Column(children: [
-                              const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Colors.white))),
-                              const SizedBox(height: 8),
-                              Text('Generating insights...', style: GoogleFonts.manrope(fontSize: 11, color: Colors.white.withValues(alpha: 0.6))),
-                            ]),
-                          ),
-                        )
-                      else if (_aiInsight != null)
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(_aiInsight!, style: GoogleFonts.manrope(fontSize: 12, fontWeight: FontWeight.w400, color: Colors.white.withValues(alpha: 0.85), height: 1.6)),
-                          const SizedBox(height: 10),
-                          GestureDetector(
-                            onTap: () async {
-                              setState(() { _aiInsight = null; _loadingInsight = true; });
-                              final insight = await AiService().generateHealthInsights();
-                              setState(() { _aiInsight = insight; _loadingInsight = false; });
-                            },
-                            child: Row(mainAxisSize: MainAxisSize.min, children: [
-                              Icon(Icons.refresh, color: Colors.white.withValues(alpha: 0.5), size: 14),
-                              const SizedBox(width: 4),
-                              Text('Refresh', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white.withValues(alpha: 0.5))),
-                            ]),
-                          ),
-                        ])
-                      else
-                        Row(children: [
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('WEEKLY PROGRESS', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.5), letterSpacing: 0.5)),
-                            const SizedBox(height: 8),
-                            SizedBox(height: 32, child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                              _bar(0.4, false), const SizedBox(width: 6),
-                              _bar(0.6, false), const SizedBox(width: 6),
-                              _bar(0.55, false), const SizedBox(width: 6),
-                              _bar(0.8, false), const SizedBox(width: 6),
-                              _bar(1.0, true),
-                            ])),
-                            const SizedBox(height: 6),
-                            Text('Tap for AI insights ✨', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
-                          ])),
-                          Container(width: 1, height: 60, color: Colors.white.withValues(alpha: 0.1), margin: const EdgeInsets.symmetric(horizontal: 12)),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text('PEAK DOSING', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white.withValues(alpha: 0.5), letterSpacing: 0.5)),
-                            const SizedBox(height: 8),
-                            Row(children: [
-                              const Icon(Icons.verified, color: Colors.white, size: 18),
-                              const SizedBox(width: 6),
-                              Text('Consistent', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w800, color: Colors.white)),
-                            ]),
-                            const SizedBox(height: 6),
-                            Text('Morning routine stable', style: GoogleFonts.manrope(fontSize: 11, fontWeight: FontWeight.w400, color: Colors.white.withValues(alpha: 0.6))),
-                          ])),
-                        ]),
-                    ]),
-                  ),
                 ),
               ],
             ),
@@ -263,18 +193,6 @@ class _HomeContentState extends State<HomeContent> {
     );
   }
 
-  static Widget _bar(double height, bool isActive) {
-    return Expanded(
-      child: FractionallySizedBox(
-        heightFactor: height, alignment: Alignment.bottomCenter,
-        child: Container(decoration: BoxDecoration(
-          color: isActive ? Colors.white : Colors.white.withValues(alpha: 0.2),
-          borderRadius: const BorderRadius.only(topLeft: Radius.circular(2), topRight: Radius.circular(2)),
-          boxShadow: isActive ? [BoxShadow(color: Colors.white.withValues(alpha: 0.5), blurRadius: 8)] : [],
-        )),
-      ),
-    );
-  }
 
   Widget _buildStatsGrid(MedicationStore store) {
     final lowRefills = store.lowRefillCount;
@@ -324,7 +242,35 @@ class _MedicationsSection extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
               Text("Today's Medications", style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
-              TextButton(onPressed: () {}, child: Text('See All', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w600, color: const Color(0xFF135BEC)))),
+              ElevatedButton(
+                onPressed: () async {
+                  final result = await showModalBottomSheet<Medication>(
+                    context: context,
+                    isScrollControlled: true,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => AddMedicationSheet(),
+                  );
+                  if (result != null) {
+                    MedicationStore().add(result);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF135BEC),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  elevation: 0,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add, size: 14),
+                    const SizedBox(width: 4),
+                    Text('ADD MEDICINE', style: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800)),
+                  ],
+                ),
+              ),
             ]),
           ),
           const SizedBox(height: 4),
@@ -368,6 +314,18 @@ class _MedicationsSection extends StatelessWidget {
                   }).toList(),
                 ),
           ),
+          if (meds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8, bottom: 8),
+              child: Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AllMedicationsScreen()));
+                  },
+                  child: Text('See All Medications', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700, color: const Color(0xFF135BEC))),
+                ),
+              ),
+            ),
         ]);
       },
     );

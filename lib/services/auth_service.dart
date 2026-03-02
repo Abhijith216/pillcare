@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,12 +14,19 @@ class AuthService {
       email: 'patient@demo.com',
       password: 'demo123',
       role: 'patient',
+      height: '175',
+      weight: '70',
+      caregiverName: 'Dr. Sarah Chen',
+      caregiverEmail: 'caregiver@demo.com',
+      patientId: 'PC-12345',
     );
     _users['caregiver@demo.com'] = _UserRecord(
       name: 'Dr. Sarah Chen',
       email: 'caregiver@demo.com',
       password: 'demo123',
       role: 'caregiver',
+      phone: '+1 234 567 890',
+      linkedPatientId: 'PC-12345',
     );
   }
 
@@ -47,13 +55,38 @@ class AuthService {
     required String email,
     required String password,
     required String role,
+    String? height,
+    String? weight,
+    String? caregiverName,
+    String? caregiverEmail,
+    String? phone,
+    String? linkedPatientId,
   }) async {
     await Future.delayed(const Duration(milliseconds: 800));
     final key = email.toLowerCase().trim();
     if (_users.containsKey(key)) {
       throw AuthException('An account with this email already exists.');
     }
-    final user = _UserRecord(name: name, email: key, password: password, role: role);
+    
+    // Generate a patient ID if it's a patient account
+    String? generatedPatientId;
+    if (role == 'patient') {
+      generatedPatientId = 'PC-${10000 + Random().nextInt(90000)}';
+    }
+
+    final user = _UserRecord(
+      name: name,
+      email: key,
+      password: password,
+      role: role,
+      height: height,
+      weight: weight,
+      caregiverName: caregiverName,
+      caregiverEmail: caregiverEmail,
+      phone: phone,
+      patientId: generatedPatientId,
+      linkedPatientId: linkedPatientId,
+    );
     _users[key] = user;
     _currentUser = user;
     return role;
@@ -126,10 +159,25 @@ class _UserRecord {
   final String email;
   final String password;
   final String role;
+  final String? height;
+  final String? weight;
+  final String? caregiverName;
+  final String? caregiverEmail;
+  final String? phone;
+  final String? patientId;
+  final String? linkedPatientId;
+  
   _UserRecord({
     required this.name,
     required this.email,
     required this.password,
     required this.role,
+    this.height,
+    this.weight,
+    this.caregiverName,
+    this.caregiverEmail,
+    this.phone,
+    this.patientId,
+    this.linkedPatientId,
   });
 }

@@ -21,6 +21,13 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
+class CaregiverContact {
+  String name;
+  String relation;
+  String phone;
+  CaregiverContact(this.name, this.relation, this.phone);
+}
+
 class _ProfileScreenState extends State<ProfileScreen>
     with TickerProviderStateMixin {
   // ─── Animation controllers ───
@@ -37,6 +44,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _weight = '--';
   String _height = '--';
   final String _patientId = 'PC-GUEST';
+
+  // ─── Caregiver Data ───
+  List<CaregiverContact> _caregivers = [
+    CaregiverContact('akshay', 'PARENT', '8075484058')
+  ];
+
+  // ─── BMI Data ───
+  double _bmiValue = 24.3;
+  String _bmiStatus = 'Normal';
 
   // ─── Preferences ───
   bool _notificationsOn = true;
@@ -120,6 +136,52 @@ class _ProfileScreenState extends State<ProfileScreen>
 
                     // ── Profile Card ──
                     _buildProfileCard(glow),
+                    const SizedBox(height: 28),
+
+                    // ── Caregiver Contact Section ──
+                    ..._caregivers.asMap().entries.map((e) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _buildCaregiverCard(e.key, glow),
+                      );
+                    }),
+                    
+                    // Add Emergency Contact Button
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      child: GestureDetector(
+                        onTap: () => _openEditCaregiverSheet(null),
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEFF6FF),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFBFDBFE).withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF135BEC), size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Add Emergency Contact',
+                                style: GoogleFonts.manrope(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: const Color(0xFF135BEC),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
+
+                    // ── BMI Section ──
+                    _buildBMICard(glow),
                     const SizedBox(height: 28),
 
                     // ── Preferences Section ──
@@ -799,6 +861,447 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 22),
           ),
         ),
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  CAREGIVER CONTACT CARD
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildCaregiverCard(int index, double glow) {
+    final caregiver = _caregivers[index];
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with Avatar and edit button
+          Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFEF2F2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.favorite_border, color: Color(0xFFEF4444)),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      caregiver.name,
+                      style: GoogleFonts.manrope(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF1E293B),
+                      ),
+                    ),
+                    Text(
+                      caregiver.relation,
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF94A3B8),
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: () => _openEditCaregiverSheet(index),
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF135BEC)),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Contact Phone Info
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'CONTACT PHONE',
+                style: GoogleFonts.manrope(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF94A3B8),
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Text(
+                caregiver.phone,
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF1E293B),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Actions: Call & SMS
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Calling ${caregiver.name}...')));
+                  },
+                  icon: const Icon(Icons.phone_outlined, size: 16),
+                  label: const Text('CALL', maxLines: 1),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF135BEC),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    textStyle: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alert SMS Sent!')));
+                  },
+                  icon: const Icon(Icons.warning_amber_rounded, size: 16),
+                  label: const Text('ALERT SMS', maxLines: 1),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFFEF2F2),
+                    foregroundColor: const Color(0xFFDC2626),
+                    elevation: 0,
+                    textStyle: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800),
+                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  //  BMI CARD
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildBMICard(double glow) {
+    return GestureDetector(
+      onTap: _openEditBMISheet,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0FDF4),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFDCFCE7)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Icon(Icons.monitor_heart_outlined, color: Color(0xFF22C55E)),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'BODY MASS INDEX',
+                    style: GoogleFonts.manrope(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: const Color(0xFF94A3B8),
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        _bmiValue.toStringAsFixed(1),
+                        style: GoogleFonts.manrope(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF1E293B),
+                          height: 1.1,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 2),
+                        child: Text(
+                          'BMI',
+                          style: GoogleFonts.manrope(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1E293B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                _bmiStatus,
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF22C55E),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _openEditCaregiverSheet(int? index) {
+    bool isNew = index == null;
+    final nameCtrl = TextEditingController(text: isNew ? '' : _caregivers[index].name);
+    final phoneCtrl = TextEditingController(text: isNew ? '' : _caregivers[index].phone);
+    String selectedRelation = isNew ? 'PARENT' : _caregivers[index].relation;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          return Container(
+            margin: EdgeInsets.only(bottom: bottomInset),
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(height: 20),
+                  Text(isNew ? 'Add Caregiver' : 'Edit Caregiver', style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+                  const SizedBox(height: 24),
+                  
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(labelText: 'Caregiver Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  const SizedBox(height: 16),
+                  DropdownButtonFormField<String>(
+                    value: ['PARENT', 'SPOUSE', 'SIBLING', 'GUARDIAN', 'OTHER'].contains(selectedRelation) ? selectedRelation : 'OTHER',
+                    decoration: InputDecoration(labelText: 'Relationship', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    items: ['PARENT', 'SPOUSE', 'SIBLING', 'GUARDIAN', 'OTHER'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                    onChanged: (val) {
+                      if (val != null) setSheetState(() => selectedRelation = val);
+                    },
+                  ),
+                  const SizedBox(height: 28),
+                  
+                  // Wrap delete button and save button in a row if editing
+                  if (!isNew)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _caregivers.removeAt(index);
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFEF2F2), foregroundColor: const Color(0xFFDC2626),
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              elevation: 0,
+                            ),
+                            child: Text('Delete', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _caregivers[index] = CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text);
+                              });
+                              Navigator.pop(ctx);
+                              _triggerSaveSparkle();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF135BEC), foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 50),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            ),
+                            child: Text('Save', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: () {
+                        if (nameCtrl.text.isNotEmpty && phoneCtrl.text.isNotEmpty) {
+                          setState(() {
+                            _caregivers.add(CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text));
+                          });
+                          Navigator.pop(ctx);
+                          _triggerSaveSparkle();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF135BEC), foregroundColor: Colors.white,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text('Add Caregiver', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                    ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _openEditBMISheet() {
+    final weightCtrl = TextEditingController(text: _weight == '--' ? '' : _weight);
+    final heightCtrl = TextEditingController(text: _height == '--' ? '' : _height);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+          return Container(
+            margin: EdgeInsets.only(bottom: bottomInset),
+            padding: const EdgeInsets.all(24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+                  const SizedBox(height: 20),
+                  Text('Update BMI Info', style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+                  const SizedBox(height: 24),
+                  
+                  TextField(
+                    controller: heightCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: 'Height (cm)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: weightCtrl,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: 'Weight (kg)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  ),
+                  const SizedBox(height: 28),
+                  ElevatedButton(
+                    onPressed: () {
+                      final h = double.tryParse(heightCtrl.text);
+                      final w = double.tryParse(weightCtrl.text);
+                      setState(() {
+                        _height = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
+                        _weight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
+                        
+                        if (h != null && w != null && h > 0) {
+                          final hMeters = h / 100;
+                          _bmiValue = w / (hMeters * hMeters);
+                          if (_bmiValue < 18.5) {
+                            _bmiStatus = 'Underweight';
+                          } else if (_bmiValue < 25) {
+                            _bmiStatus = 'Normal';
+                          } else if (_bmiValue < 30) {
+                            _bmiStatus = 'Overweight';
+                          } else {
+                            _bmiStatus = 'Obese';
+                          }
+                        }
+                      });
+                      Navigator.pop(ctx);
+                      _triggerSaveSparkle();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF22C55E), foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    child: Text('Calculate & Save', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
