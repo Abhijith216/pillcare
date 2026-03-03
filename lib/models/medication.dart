@@ -37,6 +37,37 @@ class Medication {
   String get displayDosage => '$dosage • $instruction';
   double get refillPercent => refillTotal > 0 ? refillCount / refillTotal : 0;
   bool get isLowRefill => refillCount <= 5;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'dosage': dosage,
+      'instruction': instruction,
+      'time': time,
+      'iconCodePoint': icon.codePoint,
+      'colorValue': color.value,
+      'bgColorValue': bgColor.value,
+      'refillCount': refillCount,
+      'refillTotal': refillTotal,
+      'takenToday': takenToday,
+    };
+  }
+
+  factory Medication.fromMap(Map<String, dynamic> map, String docId) {
+    return Medication(
+      id: docId,
+      name: map['name'] ?? '',
+      dosage: map['dosage'] ?? '',
+      instruction: map['instruction'] ?? '',
+      time: map['time'] ?? '08:00 AM',
+      icon: IconData(map['iconCodePoint'] ?? Icons.medication.codePoint, fontFamily: 'MaterialIcons'),
+      color: Color(map['colorValue'] ?? 0xFF135BEC),
+      bgColor: Color(map['bgColorValue'] ?? 0xFFEFF6FF),
+      refillCount: map['refillCount'] ?? 30,
+      refillTotal: map['refillTotal'] ?? 30,
+      takenToday: map['takenToday'] ?? false,
+    );
+  }
 }
 
 // Preset medication types

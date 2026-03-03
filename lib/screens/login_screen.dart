@@ -113,8 +113,10 @@ class _LoginScreenState extends State<LoginScreen> with TickerProviderStateMixin
         context,
         role == 'caregiver' ? '/caregiver' : '/home',
       );
-    } on AuthException catch (e) {
-      _showError(e.message);
+    } on Exception catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      debugPrint('Sign in error: $errorMsg');
+      _showError(errorMsg.isNotEmpty ? errorMsg : 'Failed to sign in. Please try again.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

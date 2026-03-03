@@ -123,8 +123,11 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
         context,
         role == 'caregiver' ? '/caregiver' : '/home',
       );
-    } on AuthException catch (e) {
-      _showError(e.message);
+    } on Exception catch (e) {
+      final errorMsg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
+      debugPrint('Sign up error: $errorMsg');
+      debugPrint('Sign up error details: ${e.runtimeType}');
+      _showError(errorMsg.isNotEmpty && errorMsg != 'Error' ? errorMsg : 'Failed to create account. Please check your email and try a different password.');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

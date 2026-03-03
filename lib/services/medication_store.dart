@@ -1,63 +1,92 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/medication.dart';
+import 'firestore_service.dart';
 
 class MedicationStore extends ChangeNotifier {
   static final MedicationStore _instance = MedicationStore._();
   factory MedicationStore() => _instance;
+  
+  final FirestoreService _firestoreService = FirestoreService();
+  StreamSubscription<List<Medication>>? _subscription;
+
   MedicationStore._() {
-    _medications = _defaultMeds();
+    _initStream();
   }
 
-  late List<Medication> _medications;
+  void _initStream() {
+    _subscription?.cancel();
+    _subscription = _firestoreService.streamMedications().listen((meds) {
+      _medications = meds;
+      notifyListeners();
+    });
+  }
+
+  // Refresh stream explicitly if user signs in, since singleton persists
+  void refresh() {
+    _initStream();
+  }
+
+  @override
+  void dispose() {
+    _subscription?.cancel();
+    super.dispose();
+  }
+
+  List<Medication> _medications = [];
   List<Medication> get medications => List.unmodifiable(_medications);
   int get lowRefillCount => _medications.where((m) => m.isLowRefill).length;
 
-  List<Medication> _defaultMeds() => [
-    Medication(id: '1', name: 'Amoxicillin', dosage: '500mg', instruction: 'After Breakfast', time: '08:00 AM',
-      icon: Icons.medication, color: const Color(0xFF135BEC), bgColor: const Color(0xFFEFF6FF), refillCount: 12, refillTotal: 30, takenToday: false),
-    Medication(id: '2', name: 'Vitamin D', dosage: '1000 IU', instruction: 'With Lunch', time: '01:00 PM',
-      icon: Icons.water_drop, color: const Color(0xFF7C3AED), bgColor: const Color(0xFFF5F3FF), refillCount: 4, refillTotal: 60, takenToday: true),
-    Medication(id: '3', name: 'Ibuprofen', dosage: '200mg', instruction: 'Before Sleep', time: '09:30 PM',
-      icon: Icons.medication, color: const Color(0xFF16A34A), bgColor: const Color(0xFFF0FDF4), refillCount: 22, refillTotal: 30, takenToday: false),
-  ];
-
-  void add(Medication med) {
-    _medications.add(med);
-    notifyListeners();
+  Future<void> add(Medication med) async {
+    await _firestoreService.addMedication(med);
   }
 
-  void update(String id, Medication updated) {
-    final i = _medications.indexWhere((m) => m.id == id);
-    if (i >= 0) { _medications[i] = updated; notifyListeners(); }
+  Future<void> update(String id, Medication updated) async {
+    await _firestoreService.updateMedication(updated);
   }
 
-  void remove(String id) {
-    _medications.removeWhere((m) => m.id == id);
-    notifyListeners();
+  Future<void> remove(String id) async {
+    await _firestoreService.deleteMedication(id);
   }
 
   void insertAt(int index, Medication med) {
-    _medications.insert(index.clamp(0, _medications.length), med);
-    notifyListeners();
+    // Firestore lacks explicit ordering by index out of the box without an order field.
+    // For now, simply add it.
+    add(med);
   }
 
   int indexOf(String id) => _medications.indexWhere((m) => m.id == id);
 
-  void toggleTaken(String id) {
+  Future<void> toggleTaken(String id) async {
     final i = _medications.indexWhere((m) => m.id == id);
     if (i >= 0) {
-      _medications[i].takenToday = !_medications[i].takenToday;
-      if (_medications[i].takenToday && _medications[i].refillCount > 0) {
-        _medications[i].refillCount--;
-      } else if (!_medications[i].takenToday) {
-        _medications[i].refillCount++;
+      final med = _medications[i];
+      final isNowTaken = !med.takenToday;
+      int newRefillCount = med.refillCount;
+      
+      if (isNowTaken && med.refillCount > 0) {
+        newRefillCount--;
+      } else if (!isNowTaken) {
+        newRefillCount++;
       }
+      
+      // Optimistic local update
+      med.takenToday = isNowTaken;
+      med.refillCount = newRefillCount;
       notifyListeners();
+
+      await _firestoreService.toggleTakenStatus(id, isNowTaken);
+      await _firestoreService.updateRefillCount(id, newRefillCount);
     }
   }
 
-  void updateRefillCount(String id, int count) {
+  Future<void> updateRefillCount(String id, int count) async {
+    // Optimistic local update
     final i = _medications.indexWhere((m) => m.id == id);
-    if (i >= 0) { _medications[i].refillCount = count; notifyListeners(); }
+    if (i >= 0) {
+      _medications[i].refillCount = count;
+      notifyListeners();
+    }
+    await _firestoreService.updateRefillCount(id, count);
   }
 }

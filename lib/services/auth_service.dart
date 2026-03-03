@@ -1,55 +1,71 @@
-import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// Mock auth service that simulates Firebase Auth behavior.
-/// When Firebase is configured, swap methods for real firebase_auth calls.
 class AuthService {
   static final AuthService _instance = AuthService._();
   factory AuthService() => _instance;
-  AuthService._() {
-    // Pre-seeded demo accounts
-    _users['patient@demo.com'] = _UserRecord(
-      name: 'Demo Patient',
-      email: 'patient@demo.com',
-      password: 'demo123',
-      role: 'patient',
-      height: '175',
-      weight: '70',
-      caregiverName: 'Dr. Sarah Chen',
-      caregiverEmail: 'caregiver@demo.com',
-      patientId: 'PC-12345',
-    );
-    _users['caregiver@demo.com'] = _UserRecord(
-      name: 'Dr. Sarah Chen',
-      email: 'caregiver@demo.com',
-      password: 'demo123',
-      role: 'caregiver',
-      phone: '+1 234 567 890',
-      linkedPatientId: 'PC-12345',
-    );
-  }
+  AuthService._();
 
-  final Map<String, _UserRecord> _users = {};
-  _UserRecord? _currentUser;
+  FirebaseAuth get _auth => FirebaseAuth.instance;
+  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
 
-  String? get currentUserName => _currentUser?.name;
-  String? get currentUserRole => _currentUser?.role;
-  bool get isLoggedIn => _currentUser != null;
+  String? get currentUserId => _auth.currentUser?.uid;
+  bool get isLoggedIn => _auth.currentUser != null;
+  
+  // A cached role from the firestore user document. Default to patient.
+  String? _cachedRole;
+  String? get currentUserRole => _cachedRole ?? 'patient';
 
   /// Sign in with email and password.
-  /// Returns the user's role on success, throws on failure.
   Future<String> signIn(String email, String password) async {
-    await Future.delayed(const Duration(milliseconds: 800)); // Simulate network
-    final user = _users[email.toLowerCase().trim()];
-    if (user == null) throw AuthException('No account found with this email.');
-    if (user.password != password) throw AuthException('Incorrect password.');
-    _currentUser = user;
-    return user.role;
+    try {
+      UserCredential cred = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+      
+      // Fetch role from Firestore
+      if (cred.user != null) {
+        DocumentSnapshot doc = await _firestore.collection('users').doc(cred.user!.uid).get();
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data() as Map<String, dynamic>;
+          _cachedRole = data['role'] as String?;
+        }
+      }
+      return _cachedRole ?? 'patient';
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Authentication failed';
+      switch (e.code) {
+        case 'user-not-found':
+          errorMessage = 'No account found with this email.';
+          break;
+        case 'wrong-password':
+          errorMessage = 'Incorrect password.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        case 'user-disabled':
+          errorMessage = 'This account has been disabled.';
+          break;
+        case 'too-many-requests':
+          errorMessage = 'Too many login attempts. Please try again later.';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Authentication failed: ${e.code}';
+      }
+      throw AuthException(errorMessage);
+    } catch (e) {
+      throw AuthException(e.toString());
+    }
   }
 
   /// Sign up a new user.
-  /// Returns the user's role on success, throws on failure.
   Future<String> signUp({
     required String name,
     required String email,
@@ -62,57 +78,100 @@ class AuthService {
     String? phone,
     String? linkedPatientId,
   }) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    final key = email.toLowerCase().trim();
-    if (_users.containsKey(key)) {
-      throw AuthException('An account with this email already exists.');
-    }
-    
-    // Generate a patient ID if it's a patient account
-    String? generatedPatientId;
-    if (role == 'patient') {
-      generatedPatientId = 'PC-${10000 + Random().nextInt(90000)}';
-    }
+    try {
+      UserCredential cred = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-    final user = _UserRecord(
-      name: name,
-      email: key,
-      password: password,
-      role: role,
-      height: height,
-      weight: weight,
-      caregiverName: caregiverName,
-      caregiverEmail: caregiverEmail,
-      phone: phone,
-      patientId: generatedPatientId,
-      linkedPatientId: linkedPatientId,
-    );
-    _users[key] = user;
-    _currentUser = user;
-    return role;
+      if (cred.user != null) {
+        // Build the user profile object
+        try {
+          await _firestore.collection('users').doc(cred.user!.uid).set({
+            'name': name,
+            'email': email.trim(),
+            'role': role,
+            'height': height,
+            'weight': weight,
+            'caregiverName': caregiverName,
+            'caregiverEmail': caregiverEmail,
+            'phone': phone,
+            'linkedPatientId': linkedPatientId,
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        } catch (firestoreError) {
+          // If Firestore write fails, delete the auth user
+          debugPrint('Firestore error: $firestoreError');
+          debugPrint('Firestore error type: ${firestoreError.runtimeType}');
+          
+          String errorMsg = 'Failed to create user profile';
+          if (firestoreError is FirebaseException) {
+            errorMsg = 'Firestore error: ${firestoreError.message}';
+          } else {
+            errorMsg = 'Database error: ${firestoreError.toString()}';
+          }
+          
+          try {
+            await cred.user!.delete();
+          } catch (deleteError) {
+            debugPrint('Failed to delete auth user: $deleteError');
+          }
+          
+          throw AuthException(errorMsg);
+        }
+        _cachedRole = role;
+      }
+      return role;
+    } on FirebaseAuthException catch (e) {
+      String errorMessage = 'Registration failed';
+      switch (e.code) {
+        case 'email-already-in-use':
+          errorMessage = 'This email is already registered.';
+          break;
+        case 'invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        case 'weak-password':
+          errorMessage = 'Password is too weak. Use at least 6 characters.';
+          break;
+        case 'operation-not-allowed':
+          errorMessage = 'Email/password accounts are not enabled.';
+          break;
+        case 'network-request-failed':
+          errorMessage = 'Network error. Please check your connection.';
+          break;
+        default:
+          errorMessage = e.message ?? 'Registration failed: ${e.code}';
+      }
+      throw AuthException(errorMessage);
+    } catch (e) {
+      debugPrint('Unexpected signup error: $e');
+      String errorMsg = e.toString();
+      if (errorMsg.isEmpty || errorMsg == 'Error') {
+        errorMsg = 'An unexpected error occurred. Please try again.';
+      }
+      throw AuthException(errorMsg);
+    }
   }
 
-  /// Send password reset link (mock).
+  /// Send password reset link
   Future<void> resetPassword(String email) async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    final key = email.toLowerCase().trim();
-    if (!_users.containsKey(key)) {
-      throw AuthException('No account found with this email.');
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+    } on FirebaseAuthException catch (e) {
+      throw AuthException(e.message ?? 'Password reset failed');
     }
-    // In real Firebase: FirebaseAuth.instance.sendPasswordResetEmail(email: email);
   }
 
   /// Sign out.
-  void signOut() {
-    _currentUser = null;
+  Future<void> signOut() async {
+    _cachedRole = null;
+    await _auth.signOut();
   }
 
   /// Attempt biometric authentication (only available on mobile).
   Future<bool> attemptBiometric() async {
     if (kIsWeb) return false;
-    // On mobile, use local_auth here:
-    // final localAuth = LocalAuthentication();
-    // return await localAuth.authenticate(localizedReason: 'Sign in with biometrics');
     return false;
   }
 
@@ -152,32 +211,4 @@ class AuthException implements Exception {
   AuthException(this.message);
   @override
   String toString() => message;
-}
-
-class _UserRecord {
-  final String name;
-  final String email;
-  final String password;
-  final String role;
-  final String? height;
-  final String? weight;
-  final String? caregiverName;
-  final String? caregiverEmail;
-  final String? phone;
-  final String? patientId;
-  final String? linkedPatientId;
-  
-  _UserRecord({
-    required this.name,
-    required this.email,
-    required this.password,
-    required this.role,
-    this.height,
-    this.weight,
-    this.caregiverName,
-    this.caregiverEmail,
-    this.phone,
-    this.patientId,
-    this.linkedPatientId,
-  });
 }
