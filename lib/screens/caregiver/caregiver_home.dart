@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../services/caregiver_store.dart';
 import 'overview_tab.dart';
 import 'patients_tab.dart';
 import 'alerts_tab.dart';
@@ -28,7 +29,10 @@ class _CaregiverHomeState extends State<CaregiverHome> {
   @override
   void initState() {
     super.initState();
+<<<<<<< HEAD
     // Load linked patients from Firestore when caregiver portal opens
+=======
+>>>>>>> 00a25ba (flutter fix)
     CaregiverStore().loadFromFirestore();
   }
 

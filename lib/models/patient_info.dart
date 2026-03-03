@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'medication.dart';
 
 class PatientInfo {
@@ -41,6 +42,33 @@ class PatientInfo {
         email: email,
         phone: phone,
       );
+
+  Map<String, dynamic> toMap() {
+    return {
+      'name': name,
+      'age': age,
+      'photoUrl': photoUrl,
+      'adherencePercent': adherencePercent,
+      'missedDoses': missedDoses,
+      'refillAlerts': refillAlerts,
+      'email': email,
+      'phone': phone,
+    };
+  }
+
+  factory PatientInfo.fromMap(Map<String, dynamic> map, String docId) {
+    return PatientInfo(
+      id: docId,
+      name: map['name']?.toString() ?? '',
+      age: (map['age'] as num?)?.toInt() ?? 0,
+      photoUrl: map['photoUrl']?.toString() ?? '',
+      adherencePercent: (map['adherencePercent'] as num?)?.toDouble() ?? 0.0,
+      missedDoses: (map['missedDoses'] as num?)?.toInt() ?? 0,
+      refillAlerts: (map['refillAlerts'] as num?)?.toInt() ?? 0,
+      email: map['email']?.toString() ?? '',
+      phone: map['phone']?.toString() ?? '',
+    );
+  }
 }
 
 class CaregiverAlert {
@@ -61,6 +89,41 @@ class CaregiverAlert {
     required this.timestamp,
     this.resolved = false,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'patientId': patientId,
+      'patientName': patientName,
+      'type': type.name,
+      'message': message,
+      'timestamp': Timestamp.fromDate(timestamp),
+      'resolved': resolved,
+    };
+  }
+
+  factory CaregiverAlert.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime ts;
+    final raw = map['timestamp'];
+    if (raw is Timestamp) {
+      ts = raw.toDate();
+    } else if (raw is String) {
+      ts = DateTime.tryParse(raw) ?? DateTime.now();
+    } else {
+      ts = DateTime.now();
+    }
+    return CaregiverAlert(
+      id: docId,
+      patientId: map['patientId']?.toString() ?? '',
+      patientName: map['patientName']?.toString() ?? '',
+      type: AlertType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => AlertType.missedDose,
+      ),
+      message: map['message']?.toString() ?? '',
+      timestamp: ts,
+      resolved: map['resolved'] as bool? ?? false,
+    );
+  }
 }
 
 enum AlertType { missedDose, dispenserError, refillNeeded }
@@ -81,4 +144,32 @@ class ChatMessage {
     required this.isFromCaregiver,
     required this.timestamp,
   });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'senderId': senderId,
+      'senderName': senderName,
+      'text': text,
+      'isFromCaregiver': isFromCaregiver,
+      'timestamp': Timestamp.fromDate(timestamp),
+    };
+  }
+
+  factory ChatMessage.fromMap(Map<String, dynamic> map, String docId) {
+    DateTime ts;
+    final raw = map['timestamp'];
+    if (raw is Timestamp) {
+      ts = raw.toDate();
+    } else {
+      ts = DateTime.now();
+    }
+    return ChatMessage(
+      id: docId,
+      senderId: map['senderId']?.toString() ?? '',
+      senderName: map['senderName']?.toString() ?? '',
+      text: map['text']?.toString() ?? '',
+      isFromCaregiver: map['isFromCaregiver'] as bool? ?? false,
+      timestamp: ts,
+    );
+  }
 }

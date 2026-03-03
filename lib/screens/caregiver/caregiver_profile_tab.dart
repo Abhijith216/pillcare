@@ -13,6 +13,22 @@ class _CaregiverProfileTabState extends State<CaregiverProfileTab> {
   final _store = CaregiverStore();
 
   @override
+  void initState() {
+    super.initState();
+    _store.addListener(_onUpdate);
+  }
+
+  @override
+  void dispose() {
+    _store.removeListener(_onUpdate);
+    super.dispose();
+  }
+
+  void _onUpdate() {
+    if (mounted) setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: SingleChildScrollView(

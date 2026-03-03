@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import '../models/medication.dart';
 import '../services/medication_store.dart';
 import '../services/ai_service.dart';
+import '../services/firestore_service.dart';
 import 'add_medication_sheet.dart';
 import 'ai_chat_screen.dart';
 import 'schedule_screen.dart';
@@ -21,6 +22,31 @@ class HomeContent extends StatefulWidget {
 class _HomeContentState extends State<HomeContent> {
   String? _aiInsight;
   bool _loadingInsight = false;
+  String _userName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      final data = await FirestoreService().getUserData();
+      if (mounted) {
+        setState(() {
+          _userName = data?['name']?.toString() ?? '';
+        });
+      }
+    } catch (_) {}
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +175,7 @@ class _HomeContentState extends State<HomeContent> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('Good Morning, ayisha', style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.15)),
+                      Text('${_greeting()}, ${_userName.isNotEmpty ? _userName.split(' ').first : 'there'}', style: GoogleFonts.manrope(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white, height: 1.15)),
                       const SizedBox(height: 4),
                       Text("Today's Schedule", style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w500, color: const Color(0xFFBFD4FF))),
                     ]),

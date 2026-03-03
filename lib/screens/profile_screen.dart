@@ -1708,12 +1708,18 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Expanded(
                           flex: 2,
                           child: ElevatedButton(
-                            onPressed: () {
+                            onPressed: () async {
                               setState(() {
                                 _caregivers[index] = CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text);
                               });
                               Navigator.pop(ctx);
                               _triggerSaveSparkle();
+                              try {
+                                await FirestoreService().updateUserProfile({
+                                  'caregiverName': nameCtrl.text,
+                                  'caregiverPhone': phoneCtrl.text,
+                                });
+                              } catch (_) {}
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF135BEC), foregroundColor: Colors.white,
@@ -1727,13 +1733,19 @@ class _ProfileScreenState extends State<ProfileScreen>
                     )
                   else
                     ElevatedButton(
-                      onPressed: () {
+                      onPressed: () async {
                         if (nameCtrl.text.isNotEmpty && phoneCtrl.text.isNotEmpty) {
                           setState(() {
                             _caregivers.add(CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text));
                           });
                           Navigator.pop(ctx);
                           _triggerSaveSparkle();
+                          try {
+                            await FirestoreService().updateUserProfile({
+                              'caregiverName': nameCtrl.text,
+                              'caregiverPhone': phoneCtrl.text,
+                            });
+                          } catch (_) {}
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -1792,12 +1804,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                   const SizedBox(height: 28),
                   ElevatedButton(
-                    onPressed: () {
+                    onPressed: () async {
                       final h = double.tryParse(heightCtrl.text);
                       final w = double.tryParse(weightCtrl.text);
+                      final newH = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
+                      final newW = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
                       setState(() {
-                        _height = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
-                        _weight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
+                        _height = newH;
+                        _weight = newW;
                         
                         if (h != null && w != null && h > 0) {
                           final hMeters = h / 100;
@@ -1815,6 +1829,12 @@ class _ProfileScreenState extends State<ProfileScreen>
                       });
                       Navigator.pop(ctx);
                       _triggerSaveSparkle();
+                      try {
+                        await FirestoreService().updateUserProfile({
+                          'height': newH == '--' ? '' : newH,
+                          'weight': newW == '--' ? '' : newW,
+                        });
+                      } catch (_) {}
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF22C55E), foregroundColor: Colors.white,

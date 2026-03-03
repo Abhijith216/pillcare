@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/patient_info.dart';
 import '../models/medication.dart';
+import 'firestore_service.dart';
 
 class CaregiverStore extends ChangeNotifier {
   static final CaregiverStore _instance = CaregiverStore._();
@@ -203,8 +204,19 @@ class CaregiverStore extends ChangeNotifier {
   late List<ChatMessage> _messages;
 
   // --- Caregiver profile ---
-  String caregiverName = 'Dr. Sarah Chen';
-  String caregiverEmail = 'sarah.chen@pillcare.com';
+  String caregiverName = '';
+  String caregiverEmail = '';
+
+  Future<void> loadFromFirestore() async {
+    try {
+      final data = await FirestoreService().getUserData();
+      if (data != null) {
+        caregiverName = data['name']?.toString() ?? '';
+        caregiverEmail = data['email']?.toString() ?? '';
+        notifyListeners();
+      }
+    } catch (_) {}
+  }
   bool notifyMissedDose = true;
   bool notifyRefill = true;
   bool notifyDispenser = true;
@@ -386,15 +398,15 @@ class CaregiverStore extends ChangeNotifier {
   List<ChatMessage> _defaultMessages() {
     final now = DateTime.now();
     return [
-      ChatMessage(id: 'c1', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Good morning! Did you take your Metformin today?', isFromCaregiver: true,
+      ChatMessage(id: 'c1', senderId: 'caregiver_1', senderName: 'You', text: 'Good morning! Did you take your Metformin today?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 6))),
       ChatMessage(id: 'c2', senderId: 'p1', senderName: 'Rajesh', text: 'Yes, I took it after breakfast. Thank you for checking!', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 5, minutes: 45))),
-      ChatMessage(id: 'c3', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Hi Anita, I noticed you missed your afternoon dose. Everything okay?', isFromCaregiver: true,
+      ChatMessage(id: 'c3', senderId: 'caregiver_1', senderName: 'You', text: 'Hi Anita, I noticed you missed your afternoon dose. Everything okay?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 2))),
       ChatMessage(id: 'c4', senderId: 'p2', senderName: 'Anita', text: 'Oh I forgot! Taking it now. Thanks for the reminder.', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 1, minutes: 50))),
-      ChatMessage(id: 'c5', senderId: 'caregiver_1', senderName: 'Dr. Sarah', text: 'Meena ji, your insulin supply is running low. Shall I arrange a refill?', isFromCaregiver: true,
+      ChatMessage(id: 'c5', senderId: 'caregiver_1', senderName: 'You', text: 'Meena ji, your insulin supply is running low. Shall I arrange a refill?', isFromCaregiver: true,
           timestamp: now.subtract(const Duration(hours: 4))),
       ChatMessage(id: 'c6', senderId: 'p4', senderName: 'Meena', text: 'Yes please, that would be helpful.', isFromCaregiver: false,
           timestamp: now.subtract(const Duration(hours: 3, minutes: 30))),
