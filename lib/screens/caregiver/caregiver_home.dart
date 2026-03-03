@@ -5,6 +5,7 @@ import 'patients_tab.dart';
 import 'alerts_tab.dart';
 import 'analytics_tab.dart';
 import 'caregiver_profile_tab.dart';
+import '../../services/caregiver_store.dart';
 
 class CaregiverHome extends StatefulWidget {
   const CaregiverHome({super.key});
@@ -23,6 +24,13 @@ class _CaregiverHomeState extends State<CaregiverHome> {
     AnalyticsTab(),
     CaregiverProfileTab(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Load linked patients from Firestore when caregiver portal opens
+    CaregiverStore().loadFromFirestore();
+  }
 
   @override
   Widget build(BuildContext context) {

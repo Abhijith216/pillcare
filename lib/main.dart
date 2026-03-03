@@ -9,6 +9,7 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/caregiver/caregiver_home.dart';
 import 'services/auth_service.dart';
+import 'services/theme_provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 void main() async {
@@ -29,26 +30,23 @@ class PillCareApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'PillCare',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: GoogleFonts.manrope().fontFamily,
-        scaffoldBackgroundColor: const Color(0xFFF6F6F8),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF135BEC),
-          primary: const Color(0xFF135BEC),
-          secondary: const Color(0xFF7C3AED),
-          surface: Colors.white,
-          brightness: Brightness.light,
-        ),
-      ),
-      home: _AuthGate(),
-      routes: {
-        '/login': (context) => const LoginScreen(),
-        '/home': (context) => const HomeScreen(),
-        '/caregiver': (context) => const CaregiverHome(),
+    return ListenableBuilder(
+      listenable: ThemeProvider(),
+      builder: (context, _) {
+        final themeProvider = ThemeProvider();
+        return MaterialApp(
+          title: 'PillCare',
+          debugShowCheckedModeBanner: false,
+          theme: themeProvider.lightTheme,
+          darkTheme: themeProvider.darkTheme,
+          themeMode: themeProvider.themeMode,
+          home: _AuthGate(),
+          routes: {
+            '/login': (context) => const LoginScreen(),
+            '/home': (context) => const HomeScreen(),
+            '/caregiver': (context) => const CaregiverHome(),
+          },
+        );
       },
     );
   }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/patient_alerts_store.dart';
-import 'patient_chat_screen.dart';
 
 class AlertsScreen extends StatefulWidget {
   const AlertsScreen({super.key});
@@ -156,30 +155,6 @@ class _AlertsScreenState extends State<AlertsScreen> with SingleTickerProviderSt
             ),
           ),
         ],
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 90.0, right: 10.0), // Safely clear the nav bar and align with content
-        child: FloatingActionButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              PageRouteBuilder(
-                pageBuilder: (_, __, ___) => const PatientChatScreen(),
-                transitionsBuilder: (_, anim, __, child) {
-                  return SlideTransition(
-                    position: Tween<Offset>(begin: const Offset(0, 1), end: Offset.zero)
-                        .animate(CurvedAnimation(parent: anim, curve: Curves.easeOutCubic)),
-                    child: child,
-                  );
-                },
-                transitionDuration: const Duration(milliseconds: 350),
-              ),
-            );
-          },
-          backgroundColor: const Color(0xFF7C3AED),
-          elevation: 4,
-          child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
-        ),
       ),
     );
   }

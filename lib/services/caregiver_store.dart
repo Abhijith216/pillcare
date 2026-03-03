@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/patient_info.dart';
 import '../models/medication.dart';
 
@@ -9,6 +12,190 @@ class CaregiverStore extends ChangeNotifier {
     _patients = _defaultPatients();
     _alerts = _defaultAlerts();
     _messages = _defaultMessages();
+  }
+
+  bool _firestoreLoaded = false;
+  final Map<String, StreamSubscription> _medSyncSubscriptions = {};
+
+  /// Loads caregiver profile + linked patients from Firestore.
+  /// Called once when CaregiverHome mounts.
+  Future<void> loadFromFirestore() async {
+    if (_firestoreLoaded) return;
+    _firestoreLoaded = true;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      // 1. Load caregiver's own profile
+      final caregiverDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (caregiverDoc.exists && caregiverDoc.data() != null) {
+        final data = caregiverDoc.data()!;
+        caregiverName = data['name'] as String? ?? caregiverName;
+        caregiverEmail = data['email'] as String? ?? caregiverEmail;
+
+        // 2. Check if caregiver signed up with a linkedPatientId
+        final signupLinkedId = data['linkedPatientId'] as String? ?? '';
+        if (signupLinkedId.isNotEmpty) {
+          await _loadPatientByPatientId(signupLinkedId);
+        }
+
+        // 3. Load any additional linked patient IDs stored in a list
+        final linkedIds = data['linkedPatientIds'] as List<dynamic>? ?? [];
+        for (final id in linkedIds) {
+          if (id is String && id.isNotEmpty) {
+            await _loadPatientByPatientId(id);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('CaregiverStore: Error loading from Firestore: $e');
+    }
+
+    // Start real-time medication sync for all Firestore-loaded patients
+    _startMedicationSync();
+
+    notifyListeners();
+  }
+
+  /// Queries Firestore for a user whose `patientId` matches, then adds them
+  /// along with their actual medications from Firestore.
+  Future<void> _loadPatientByPatientId(String patientId) async {
+    // Don't add duplicates
+    if (_patients.any((p) => p.linkedPatientId == patientId)) return;
+
+    try {
+      final query = await FirebaseFirestore.instance
+          .collection('users')
+          .where('patientId', isEqualTo: patientId)
+          .limit(1)
+          .get();
+
+      if (query.docs.isNotEmpty) {
+        final patientUid = query.docs.first.id;
+        final data = query.docs.first.data();
+        final name = data['name'] as String? ?? 'Unknown Patient';
+        final email = data['email'] as String? ?? '';
+        final phone = data['phone'] as String? ?? '';
+        final ageRaw = data['age'];
+        final age = ageRaw is int ? ageRaw : int.tryParse(ageRaw?.toString() ?? '') ?? 0;
+
+        // Load the patient's medications from Firestore
+        final medsSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(patientUid)
+            .collection('medications')
+            .get();
+
+        final medications = medsSnapshot.docs.isNotEmpty
+            ? medsSnapshot.docs
+                .map((doc) => Medication.fromMap(doc.data(), doc.id))
+                .toList()
+            : <Medication>[];
+
+        // Calculate adherence from meds
+        final totalMeds = medications.length;
+        final takenMeds = medications.where((m) => m.takenToday).length;
+        final adherence = totalMeds > 0 ? (takenMeds / totalMeds * 100) : 0.0;
+        final missed = totalMeds - takenMeds;
+        final lowRefills = medications.where((m) => m.isLowRefill).length;
+
+        _patients.add(PatientInfo(
+          id: 'fb_$patientUid',
+          linkedPatientId: patientId,
+          name: name,
+          age: age,
+          email: email,
+          phone: phone,
+          adherencePercent: adherence,
+          missedDoses: missed,
+          refillAlerts: lowRefills,
+          medications: medications.isEmpty
+              ? [Medication(id: 'none', name: 'No medications yet', dosage: '-', instruction: '-', time: '-')]
+              : medications,
+        ));
+      }
+    } catch (e) {
+      debugPrint('CaregiverStore: Error loading patient $patientId: $e');
+    }
+  }
+
+  /// Sets up real-time Firestore listeners on each linked patient's medications.
+  /// When a patient adds/updates/removes a medication, the caregiver sees it live.
+  void _startMedicationSync() {
+    for (final patient in _patients) {
+      // Only sync Firestore-loaded patients (id starts with 'fb_')
+      if (!patient.id.startsWith('fb_')) continue;
+      final patientUid = patient.id.replaceFirst('fb_', '');
+
+      // Skip if already subscribed
+      if (_medSyncSubscriptions.containsKey(patientUid)) continue;
+
+      final sub = FirebaseFirestore.instance
+          .collection('users')
+          .doc(patientUid)
+          .collection('medications')
+          .snapshots()
+          .listen((snapshot) {
+        final meds = snapshot.docs
+            .map((doc) => Medication.fromMap(doc.data(), doc.id))
+            .toList();
+
+        final idx = _patients.indexWhere((p) => p.id == 'fb_$patientUid');
+        if (idx >= 0) {
+          final totalMeds = meds.length;
+          final takenMeds = meds.where((m) => m.takenToday).length;
+          final adherence = totalMeds > 0 ? (takenMeds / totalMeds * 100) : 0.0;
+
+          _patients[idx] = _patients[idx].copy()
+            ..medications.clear();
+          _patients[idx].medications.addAll(
+            meds.isEmpty
+                ? [Medication(id: 'none', name: 'No medications yet', dosage: '-', instruction: '-', time: '-')]
+                : meds,
+          );
+          // Update stats
+          _patients[idx] = PatientInfo(
+            id: _patients[idx].id,
+            linkedPatientId: _patients[idx].linkedPatientId,
+            name: _patients[idx].name,
+            age: _patients[idx].age,
+            email: _patients[idx].email,
+            phone: _patients[idx].phone,
+            adherencePercent: adherence,
+            missedDoses: totalMeds - takenMeds,
+            refillAlerts: meds.where((m) => m.isLowRefill).length,
+            medications: meds.isEmpty
+                ? [Medication(id: 'none', name: 'No medications yet', dosage: '-', instruction: '-', time: '-')]
+                : meds,
+          );
+          notifyListeners();
+        }
+      });
+
+      _medSyncSubscriptions[patientUid] = sub;
+    }
+  }
+
+  /// Saves a newly linked patient ID to the caregiver's Firestore doc
+  Future<void> saveLinkToFirestore(String patientId) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'linkedPatientIds': FieldValue.arrayUnion([patientId]),
+      });
+    } catch (e) {
+      debugPrint('CaregiverStore: Error saving link: $e');
+    }
   }
 
   late List<PatientInfo> _patients;
@@ -45,6 +232,14 @@ class CaregiverStore extends ChangeNotifier {
   PatientInfo? getPatient(String id) {
     try {
       return _patients.firstWhere((p) => p.id == id);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  PatientInfo? getPatientByLinkedId(String linkedPatientId) {
+    try {
+      return _patients.firstWhere((p) => p.linkedPatientId == linkedPatientId);
     } catch (_) {
       return null;
     }
@@ -96,6 +291,7 @@ class CaregiverStore extends ChangeNotifier {
   List<PatientInfo> _defaultPatients() => [
         PatientInfo(
           id: 'p1',
+          linkedPatientId: 'PC-10001',
           name: 'Rajesh Kumar',
           age: 68,
           adherencePercent: 87,
@@ -112,6 +308,7 @@ class CaregiverStore extends ChangeNotifier {
         ),
         PatientInfo(
           id: 'p2',
+          linkedPatientId: 'PC-10002',
           name: 'Anita Sharma',
           age: 72,
           adherencePercent: 64,
@@ -130,6 +327,7 @@ class CaregiverStore extends ChangeNotifier {
         ),
         PatientInfo(
           id: 'p3',
+          linkedPatientId: 'PC-10003',
           name: 'Vikram Patel',
           age: 55,
           adherencePercent: 96,
@@ -144,6 +342,7 @@ class CaregiverStore extends ChangeNotifier {
         ),
         PatientInfo(
           id: 'p4',
+          linkedPatientId: 'PC-10004',
           name: 'Meena Devi',
           age: 80,
           adherencePercent: 58,

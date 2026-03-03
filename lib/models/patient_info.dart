@@ -3,6 +3,7 @@ import 'medication.dart';
 
 class PatientInfo {
   final String id;
+  String linkedPatientId; // User-facing patient ID for caregiver-patient linking
   String name;
   int age;
   String photoUrl;
@@ -15,6 +16,7 @@ class PatientInfo {
 
   PatientInfo({
     required this.id,
+    this.linkedPatientId = '',
     required this.name,
     required this.age,
     this.photoUrl = '',
@@ -28,6 +30,7 @@ class PatientInfo {
 
   PatientInfo copy() => PatientInfo(
         id: id,
+        linkedPatientId: linkedPatientId,
         name: name,
         age: age,
         photoUrl: photoUrl,

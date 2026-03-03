@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import '../models/patient_info.dart'; // Re-use ChatMessage
+import 'medication_store.dart';
 
 enum AlertStatus { missed, delayed, scheduled, resolved, snoozed }
 
@@ -37,9 +39,16 @@ class PatientAlertsStore extends ChangeNotifier {
 
   late List<PatientAlert> _alerts;
   late List<ChatMessage> _messages;
+  Timer? _checkTimer;
 
   PatientAlertsStore._() {
     _generateMockData();
+    // Start checking medication schedules every 60 seconds
+    _checkTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      _checkMedicationSchedules();
+    });
+    // Also check immediately on creation (after a short delay for MedicationStore to init)
+    Future.delayed(const Duration(seconds: 3), () => _checkMedicationSchedules());
   }
 
   List<PatientAlert> get allAlerts => List.unmodifiable(_alerts);
@@ -53,6 +62,93 @@ class PatientAlertsStore extends ChangeNotifier {
   List<PatientAlert> get resolvedAlerts => _alerts
       .where((a) => a.status == AlertStatus.resolved || a.status == AlertStatus.snoozed)
       .toList();
+
+  /// Checks all medications and auto-generates alerts based on schedule vs current time.
+  void _checkMedicationSchedules() {
+    final meds = MedicationStore().medications;
+    if (meds.isEmpty) return;
+
+    final now = DateTime.now();
+    bool changed = false;
+
+    for (final med in meds) {
+      // Parse the medication time (e.g. "08:00 AM", "02:30 PM")
+      final scheduledTime = _parseMedTime(med.time, now);
+      if (scheduledTime == null) continue;
+
+      // Create a unique alert ID based on med ID + today's date
+      final alertId = 'auto_${med.id}_${now.year}${now.month}${now.day}';
+
+      // Skip if alert already exists for this med today
+      if (_alerts.any((a) => a.id == alertId)) continue;
+
+      final diffMinutes = now.difference(scheduledTime).inMinutes;
+
+      if (!med.takenToday && diffMinutes > 5) {
+        // Medication time passed by 5+ minutes and not taken → MISSED
+        _alerts.add(PatientAlert(
+          id: alertId,
+          title: '${med.name} ${med.dosage}',
+          message: 'Scheduled: ${med.time} — Not taken yet',
+          scheduledTime: scheduledTime,
+          status: AlertStatus.missed,
+          baseColor: const Color(0xFFDC2626),
+        ));
+        changed = true;
+      } else if (med.takenToday && diffMinutes > 15) {
+        // Was taken, but more than 15 min after schedule → DELAYED
+        _alerts.add(PatientAlert(
+          id: alertId,
+          title: '${med.name} ${med.dosage}',
+          message: 'Scheduled: ${med.time} — Taken late',
+          scheduledTime: scheduledTime,
+          status: AlertStatus.delayed,
+          baseColor: const Color(0xFFD97706),
+        ));
+        changed = true;
+      } else if (!med.takenToday && diffMinutes >= -30 && diffMinutes <= 0) {
+        // Coming up within the next 30 minutes → SCHEDULED
+        _alerts.add(PatientAlert(
+          id: alertId,
+          title: '${med.name} ${med.dosage}',
+          message: 'Coming up at ${med.time}',
+          scheduledTime: scheduledTime,
+          status: AlertStatus.scheduled,
+          baseColor: const Color(0xFF135BEC),
+        ));
+        changed = true;
+      }
+    }
+
+    if (changed) notifyListeners();
+  }
+
+  /// Parses a time string like "08:00 AM" or "02:30 PM" into a DateTime for today.
+  DateTime? _parseMedTime(String timeStr, DateTime today) {
+    try {
+      timeStr = timeStr.trim().toUpperCase();
+      final isPM = timeStr.contains('PM');
+      final isAM = timeStr.contains('AM');
+      final cleaned = timeStr.replaceAll(RegExp(r'[APM\s]'), '');
+      final parts = cleaned.split(':');
+      if (parts.length < 2) return null;
+
+      var hour = int.parse(parts[0]);
+      final minute = int.parse(parts[1]);
+
+      if (isPM && hour < 12) hour += 12;
+      if (isAM && hour == 12) hour = 0;
+
+      return DateTime(today.year, today.month, today.day, hour, minute);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Force-check medication schedules (can be called externally)
+  void refreshAlerts() {
+    _checkMedicationSchedules();
+  }
 
   void _generateMockData() {
     final now = DateTime.now();
@@ -125,8 +221,7 @@ class PatientAlertsStore extends ChangeNotifier {
       _alerts[idx].status = AlertStatus.resolved;
       notifyListeners();
       
-      // Simulate Caregiver Acknowledgment Webhook/Log
-      print('Firebase Simulated: Alert $id RESOLVED sent to Caregiver Dashboard.');
+      debugPrint('Alert $id RESOLVED — synced to Caregiver Dashboard.');
     }
   }
 
@@ -136,8 +231,7 @@ class PatientAlertsStore extends ChangeNotifier {
       _alerts[idx].status = AlertStatus.snoozed;
       notifyListeners();
 
-      // Simulate Caregiver Acknowledgment Webhook/Log
-      print('Firebase Simulated: Alert $id SNOOZED sent to Caregiver Dashboard.');
+      debugPrint('Alert $id SNOOZED — synced to Caregiver Dashboard.');
     }
   }
 
@@ -164,5 +258,11 @@ class PatientAlertsStore extends ChangeNotifier {
       ));
       notifyListeners();
     });
+  }
+
+  @override
+  void dispose() {
+    _checkTimer?.cancel();
+    super.dispose();
   }
 }

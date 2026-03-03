@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
+<<<<<<< Updated upstream
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import '../services/theme_provider.dart';
+>>>>>>> Stashed changes
 import '../services/medication_store.dart';
 import '../services/firestore_service.dart';
 import 'settings/notifications_page.dart';
@@ -45,9 +52,14 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _age = '--';
   String _weight = '--';
   String _height = '--';
+<<<<<<< Updated upstream
   String _patientId = 'PC-...';
   String _role = 'patient';
   bool _dataLoading = true;
+=======
+  String _patientId = 'PC-GUEST';
+  bool _isLoadingProfile = true;
+>>>>>>> Stashed changes
 
   // ─── Caregiver Data ───
   List<CaregiverContact> _caregivers = [];
@@ -74,6 +86,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       duration: const Duration(milliseconds: 300),
     );
 
+<<<<<<< Updated upstream
     _loadUserData();
   }
 
@@ -122,6 +135,123 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
     } catch (e) {
       if (mounted) setState(() => _dataLoading = false);
+=======
+    _loadUserProfile();
+  }
+
+  /// Fetches the current user's profile data from Firestore
+  Future<void> _loadUserProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      setState(() => _isLoadingProfile = false);
+      return;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && doc.data() != null && mounted) {
+        final data = doc.data()!;
+        setState(() {
+          _name = (data['name'] as String?)?.isNotEmpty == true
+              ? data['name'] as String
+              : user.displayName ?? 'Guest User';
+          _email = (data['email'] as String?)?.isNotEmpty == true
+              ? data['email'] as String
+              : user.email ?? 'guest@pillcare.com';
+          _phone = (data['phone'] as String?)?.isNotEmpty == true
+              ? data['phone'] as String
+              : '+1 (555) 000-0000';
+
+          // Height & Weight
+          final h = data['height'] as String? ?? '';
+          final w = data['weight'] as String? ?? '';
+          _height = h.isNotEmpty ? h.replaceAll(RegExp(r'[^0-9.]'), '') : '--';
+          _weight = w.isNotEmpty ? w.replaceAll(RegExp(r'[^0-9.]'), '') : '--';
+
+          // Age — could be stored as string or int
+          final ageRaw = data['age'];
+          if (ageRaw != null) {
+            _age = ageRaw.toString();
+          }
+
+          // Patient ID — generate from UID if not stored
+          final storedPatientId = data['patientId'] as String? ?? '';
+          if (storedPatientId.isNotEmpty) {
+            _patientId = storedPatientId;
+          } else {
+            // Generate a patient ID from UID hash
+            final hash = user.uid.hashCode.abs() % 100000;
+            _patientId = 'PC-${hash.toString().padLeft(5, '0')}';
+            // Save it back to Firestore for future use
+            FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .update({'patientId': _patientId}).catchError((_) {});
+          }
+
+          // Caregiver details
+          final cgName = data['caregiverName'] as String? ?? '';
+          final cgEmail = data['caregiverEmail'] as String? ?? '';
+          if (cgName.isNotEmpty || cgEmail.isNotEmpty) {
+            _caregivers = [
+              CaregiverContact(
+                cgName.isNotEmpty ? cgName : 'Caregiver',
+                'CAREGIVER',
+                cgEmail,
+              ),
+            ];
+          }
+
+          // Compute BMI if height and weight are available
+          _recalculateBMI();
+
+          _isLoadingProfile = false;
+        });
+      } else {
+        // Fallback to Firebase Auth info
+        if (mounted) {
+          setState(() {
+            _name = user.displayName ?? 'Guest User';
+            _email = user.email ?? 'guest@pillcare.com';
+            _isLoadingProfile = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading profile: $e');
+      if (mounted) {
+        setState(() {
+          _name = user.displayName ?? 'Guest User';
+          _email = user.email ?? 'guest@pillcare.com';
+          _isLoadingProfile = false;
+        });
+      }
+    }
+  }
+
+  void _recalculateBMI() {
+    final weightNum = double.tryParse(_weight);
+    final heightNum = double.tryParse(_height);
+    if (weightNum != null && heightNum != null && heightNum > 0) {
+      final heightM = heightNum / 100;
+      _bmiValue = double.parse((weightNum / (heightM * heightM)).toStringAsFixed(1));
+      if (_bmiValue < 18.5) {
+        _bmiStatus = 'Underweight';
+      } else if (_bmiValue < 25) {
+        _bmiStatus = 'Normal';
+      } else if (_bmiValue < 30) {
+        _bmiStatus = 'Overweight';
+      } else {
+        _bmiStatus = 'Obese';
+      }
+    } else {
+      _bmiValue = 0.0;
+      _bmiStatus = '--';
+>>>>>>> Stashed changes
     }
   }
 
@@ -240,6 +370,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                     _buildSectionHeader('PREFERENCES'),
                     const SizedBox(height: 12),
                     _buildNotificationToggle(glow),
+                    const SizedBox(height: 10),
+                    _buildDarkModeToggle(glow),
                     const SizedBox(height: 10),
                     _buildSmartDispenserCard(glow),
                     const SizedBox(height: 10),
@@ -415,26 +547,112 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Text(
-                      'ID: $_patientId',
-                      style: GoogleFonts.manrope(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF475569),
-                        letterSpacing: 0.3,
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // ── Prominent Patient ID Card ──
+              GestureDetector(
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: _patientId));
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '📋 Patient ID "$_patientId" copied to clipboard!',
+                        style: GoogleFonts.manrope(fontWeight: FontWeight.w600),
                       ),
+                      backgroundColor: const Color(0xFF135BEC),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF135BEC).withValues(alpha: 0.06),
+                        const Color(0xFF7C3AED).withValues(alpha: 0.06),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF135BEC).withValues(alpha: 0.15),
                     ),
                   ),
-                ],
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.fingerprint_rounded,
+                              size: 18, color: const Color(0xFF135BEC)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'YOUR PATIENT ID',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF135BEC),
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _patientId,
+                        style: GoogleFonts.manrope(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w900,
+                          color: const Color(0xFF1E293B),
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.copy_rounded,
+                              size: 12, color: const Color(0xFF94A3B8)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Tap to copy',
+                            style: GoogleFonts.manrope(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF94A3B8),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text('•', style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 10)),
+                          const SizedBox(width: 8),
+                          GestureDetector(
+                            onTap: () => _showQRCodeDialog(),
+                            child: Row(
+                              children: [
+                                Icon(Icons.qr_code_2_rounded,
+                                    size: 12, color: const Color(0xFF135BEC)),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Show QR Code',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: const Color(0xFF135BEC),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
 
@@ -663,6 +881,118 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+  // ═══════════════════════════════════════════════════════════════
+  //  DARK MODE TOGGLE
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildDarkModeToggle(double glow) {
+    final themeProvider = ThemeProvider();
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              themeProvider.isDark
+                  ? Icons.dark_mode_rounded
+                  : Icons.light_mode_rounded,
+              size: 20,
+              color: const Color(0xFF64748B),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Text(
+              'Dark Mode',
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1E293B),
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              themeProvider.toggleTheme();
+              setState(() {});
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              width: 52,
+              height: 30,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: themeProvider.isDark
+                    ? const Color(0xFF7C3AED)
+                    : const Color(0xFFE2E8F0),
+                boxShadow: themeProvider.isDark
+                    ? [
+                        BoxShadow(
+                          color: const Color(0xFF7C3AED)
+                              .withValues(alpha: 0.25 + glow * 0.15),
+                          blurRadius: 8 + glow * 4,
+                          spreadRadius: -1,
+                        ),
+                      ]
+                    : [],
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                alignment: themeProvider.isDark
+                    ? Alignment.centerRight
+                    : Alignment.centerLeft,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    themeProvider.isDark
+                        ? Icons.nightlight_round
+                        : Icons.wb_sunny_rounded,
+                    size: 14,
+                    color: themeProvider.isDark
+                        ? const Color(0xFF7C3AED)
+                        : const Color(0xFFF59E0B),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1159,6 +1489,150 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  void _showQRCodeDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.all(24),
+        child: Container(
+          padding: const EdgeInsets.all(28),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF135BEC).withValues(alpha: 0.2),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.qr_code_2_rounded, size: 18, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      'YOUR PATIENT QR CODE',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // QR Code
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: QrImageView(
+                  data: _patientId,
+                  version: QrVersions.auto,
+                  size: 200,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.roundedOuter,
+                    color: Color(0xFF135BEC),
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.roundedOuter,
+                    color: Color(0xFF1E293B),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Patient ID text
+              Text(
+                _patientId,
+                style: GoogleFonts.manrope(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w900,
+                  color: const Color(0xFF1E293B),
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Ask your caregiver to scan this code',
+                style: GoogleFonts.manrope(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: const Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: _patientId));
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Copied $_patientId',
+                                style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+                            backgroundColor: const Color(0xFF135BEC),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.copy_rounded, size: 16),
+                      label: Text('Copy ID', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF135BEC),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      ),
+                      child: Text('Close', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _openEditCaregiverSheet(int? index) {
     bool isNew = index == null;
     final nameCtrl = TextEditingController(text: isNew ? '' : _caregivers[index].name);
@@ -1392,6 +1866,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             final newWeight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
             final newHeight = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
             setState(() {
+<<<<<<< Updated upstream
               _name = newName;
               _email = newEmail;
               _phone = newPhone;
@@ -1409,11 +1884,52 @@ class _ProfileScreenState extends State<ProfileScreen>
                 'weight': newWeight == '--' ? '' : newWeight,
               });
             } catch (_) {}
+=======
+              _name = nameCtrl.text.isEmpty ? 'Guest User' : nameCtrl.text;
+              _email = emailCtrl.text.isEmpty
+                  ? 'guest@pillcare.com'
+                  : emailCtrl.text;
+              _phone = phoneCtrl.text.isEmpty
+                  ? '+1 (555) 000-0000'
+                  : phoneCtrl.text;
+              _age = ageCtrl.text.isEmpty ? '--' : ageCtrl.text;
+              _weight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
+              _height = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
+              _recalculateBMI();
+            });
+            Navigator.pop(ctx);
+            _triggerSaveSparkle();
+
+            // Persist changes to Firestore
+            _saveProfileToFirestore();
+>>>>>>> Stashed changes
           },
           onCancel: () => Navigator.pop(ctx),
         );
       },
     );
+  }
+
+  /// Saves the current profile data back to Firestore
+  Future<void> _saveProfileToFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .update({
+        'name': _name,
+        'email': _email,
+        'phone': _phone,
+        'age': _age,
+        'height': _height,
+        'weight': _weight,
+      });
+    } catch (e) {
+      debugPrint('Error saving profile: $e');
+    }
   }
 }
 
