@@ -62,6 +62,32 @@ class FirestoreService {
         .delete();
   }
 
+  // Stream of user profile data
+  Stream<Map<String, dynamic>?> streamUserData() {
+    final uid = currentUserId;
+    if (uid == null) return Stream.value(null);
+    return _db
+        .collection('users')
+        .doc(uid)
+        .snapshots()
+        .map((doc) => doc.exists ? doc.data() : null);
+  }
+
+  // Get user data once
+  Future<Map<String, dynamic>?> getUserData() async {
+    final uid = currentUserId;
+    if (uid == null) return null;
+    final doc = await _db.collection('users').doc(uid).get();
+    return doc.exists ? doc.data() : null;
+  }
+
+  // Update user profile fields
+  Future<void> updateUserProfile(Map<String, dynamic> data) async {
+    final uid = currentUserId;
+    if (uid == null) return;
+    await _db.collection('users').doc(uid).update(data);
+  }
+
   // Update refill count specifically
   Future<void> updateRefillCount(String medId, int newCount) async {
     final uid = currentUserId;

@@ -110,19 +110,19 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
 
       if (!mounted) return;
 
+      await _auth.signOut();
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🎉 Account created successfully!', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+          content: Text('🎉 Account created! Please sign in.', style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
           backgroundColor: const Color(0xFF16A34A),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
 
-      Navigator.pushReplacementNamed(
-        context,
-        role == 'caregiver' ? '/caregiver' : '/home',
-      );
+      Navigator.pushReplacementNamed(context, '/login');
     } on Exception catch (e) {
       final errorMsg = e.toString().replaceAll('Exception: ', '').replaceAll('AuthException: ', '');
       debugPrint('Sign up error: $errorMsg');
@@ -325,19 +325,16 @@ class _SignUpScreenState extends State<SignUpScreen> with TickerProviderStateMix
                                 obscure: _obscurePassword,
                                 toggleObscure: () => setState(() => _obscurePassword = !_obscurePassword),
                               ),
-                              
-                              if (_isPatient) ...[
-                                const SizedBox(height: 14),
-                                // Confirm Password
-                                _buildField(
-                                  controller: _confirmController,
-                                  label: 'Confirm Password',
-                                  hint: 'Re-enter password',
-                                  icon: Icons.lock_outline,
-                                  obscure: _obscureConfirm,
-                                  toggleObscure: () => setState(() => _obscureConfirm = !_obscureConfirm),
-                                ),
-                              ],
+                              const SizedBox(height: 14),
+                              // Confirm Password — always shown for both roles
+                              _buildField(
+                                controller: _confirmController,
+                                label: 'Confirm Password',
+                                hint: 'Re-enter password',
+                                icon: Icons.lock_outline,
+                                obscure: _obscureConfirm,
+                                toggleObscure: () => setState(() => _obscureConfirm = !_obscureConfirm),
+                              ),
 
                               if (!_isPatient) ...[
                                 const SizedBox(height: 24),

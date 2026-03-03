@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -46,31 +47,31 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBjhWgoRBpl0zDg6WbPQXopZAcyn2tByY0',
-    appId: '1:782782700061:web:fe031467912d2e662f04f4',
-    messagingSenderId: '782782700061',
-    projectId: 'pillcare-d4193',
-    authDomain: 'pillcare-d4193.firebaseapp.com',
-    storageBucket: 'pillcare-d4193.firebasestorage.app',
-    measurementId: 'G-M8ETGMEMG5',
+  static FirebaseOptions get web => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_WEB_API_KEY']!,
+    appId: dotenv.env['FIREBASE_WEB_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    authDomain: dotenv.env['FIREBASE_AUTH_DOMAIN']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
+    measurementId: dotenv.env['FIREBASE_MEASUREMENT_ID'],
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB1JrH2jHB1L0wzswIAGeHP1gmtKuInogk',
-    appId: '1:782782700061:android:4f348ba945fb6d6f2f04f4',
-    messagingSenderId: '782782700061',
-    projectId: 'pillcare-d4193',
-    storageBucket: 'pillcare-d4193.firebasestorage.app',
+  static FirebaseOptions get android => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ANDROID_API_KEY']!,
+    appId: dotenv.env['FIREBASE_ANDROID_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD8yDeAWt9_tjz-oChpUN_TboBqSyOQhJ4',
-    appId: '1:782782700061:ios:e49f0fbc487621962f04f4',
-    messagingSenderId: '782782700061',
-    projectId: 'pillcare-d4193',
-    storageBucket: 'pillcare-d4193.firebasestorage.app',
-    iosBundleId: 'com.example.pillcare',
+  static FirebaseOptions get ios => FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_IOS_API_KEY']!,
+    appId: dotenv.env['FIREBASE_IOS_APP_ID']!,
+    messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID']!,
+    projectId: dotenv.env['FIREBASE_PROJECT_ID']!,
+    storageBucket: dotenv.env['FIREBASE_STORAGE_BUCKET']!,
+    iosBundleId: dotenv.env['FIREBASE_IOS_BUNDLE_ID'],
   );
 
 }

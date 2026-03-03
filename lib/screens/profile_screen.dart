@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/medication_store.dart';
+import '../services/firestore_service.dart';
 import 'settings/notifications_page.dart';
 import 'settings/smart_dispenser_page.dart';
 import 'settings/medication_schedule_page.dart';
@@ -37,22 +39,22 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _showSaveSparkle = false;
 
   // ─── User data (editable) ───
-  String _name = 'Guest User';
-  String _email = 'guest@pillcare.com';
-  String _phone = '+1 (555) 000-0000';
+  String _name = '';
+  String _email = '';
+  String _phone = '';
   String _age = '--';
   String _weight = '--';
   String _height = '--';
-  final String _patientId = 'PC-GUEST';
+  String _patientId = 'PC-...';
+  String _role = 'patient';
+  bool _dataLoading = true;
 
   // ─── Caregiver Data ───
-  List<CaregiverContact> _caregivers = [
-    CaregiverContact('akshay', 'PARENT', '8075484058')
-  ];
+  List<CaregiverContact> _caregivers = [];
 
   // ─── BMI Data ───
-  double _bmiValue = 24.3;
-  String _bmiStatus = 'Normal';
+  double _bmiValue = 0.0;
+  String _bmiStatus = '--';
 
   // ─── Preferences ───
   bool _notificationsOn = true;
@@ -71,6 +73,56 @@ class _ProfileScreenState extends State<ProfileScreen>
       vsync: this,
       duration: const Duration(milliseconds: 300),
     );
+
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) {
+      if (mounted) setState(() => _dataLoading = false);
+      return;
+    }
+    try {
+      final data = await FirestoreService().getUserData();
+      if (data != null && mounted) {
+        final h = data['height']?.toString() ?? '';
+        final w = data['weight']?.toString() ?? '';
+        double bmi = 0.0;
+        String bmiStatus = '--';
+        final hNum = double.tryParse(h);
+        final wNum = double.tryParse(w);
+        if (hNum != null && wNum != null && hNum > 0) {
+          final hm = hNum / 100;
+          bmi = wNum / (hm * hm);
+          if (bmi < 18.5) bmiStatus = 'Underweight';
+          else if (bmi < 25) bmiStatus = 'Normal';
+          else if (bmi < 30) bmiStatus = 'Overweight';
+          else bmiStatus = 'Obese';
+        }
+        final cgName = data['caregiverName']?.toString() ?? '';
+        final cgEmail = data['caregiverEmail']?.toString() ?? '';
+        setState(() {
+          _name = data['name']?.toString() ?? '';
+          _email = data['email']?.toString() ?? '';
+          _phone = data['phone']?.toString() ?? '';
+          _height = h.isEmpty ? '--' : h;
+          _weight = w.isEmpty ? '--' : w;
+          _role = data['role']?.toString() ?? 'patient';
+          _patientId = 'PC-${uid.substring(0, 6).toUpperCase()}';
+          _bmiValue = bmi;
+          _bmiStatus = bmiStatus;
+          if (cgName.isNotEmpty) {
+            _caregivers = [CaregiverContact(cgName, 'CAREGIVER', cgEmail)];
+          }
+          _dataLoading = false;
+        });
+      } else if (mounted) {
+        setState(() => _dataLoading = false);
+      }
+    } catch (e) {
+      if (mounted) setState(() => _dataLoading = false);
+    }
   }
 
   @override
@@ -1332,21 +1384,31 @@ class _ProfileScreenState extends State<ProfileScreen>
           ageCtrl: ageCtrl,
           weightCtrl: weightCtrl,
           heightCtrl: heightCtrl,
-          onSave: () {
+          onSave: () async {
+            final newName = nameCtrl.text.isEmpty ? _name : nameCtrl.text;
+            final newEmail = emailCtrl.text.isEmpty ? _email : emailCtrl.text;
+            final newPhone = phoneCtrl.text.isEmpty ? _phone : phoneCtrl.text;
+            final newAge = ageCtrl.text.isEmpty ? '--' : ageCtrl.text;
+            final newWeight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
+            final newHeight = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
             setState(() {
-              _name = nameCtrl.text.isEmpty ? 'Guest User' : nameCtrl.text;
-              _email = emailCtrl.text.isEmpty
-                  ? 'guest@pillcare.com'
-                  : emailCtrl.text;
-              _phone = phoneCtrl.text.isEmpty
-                  ? '+1 (555) 000-0000'
-                  : phoneCtrl.text;
-              _age = ageCtrl.text.isEmpty ? '--' : ageCtrl.text;
-              _weight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
-              _height = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
+              _name = newName;
+              _email = newEmail;
+              _phone = newPhone;
+              _age = newAge;
+              _weight = newWeight;
+              _height = newHeight;
             });
             Navigator.pop(ctx);
             _triggerSaveSparkle();
+            try {
+              await FirestoreService().updateUserProfile({
+                'name': newName,
+                'phone': newPhone,
+                'height': newHeight == '--' ? '' : newHeight,
+                'weight': newWeight == '--' ? '' : newWeight,
+              });
+            } catch (_) {}
           },
           onCancel: () => Navigator.pop(ctx),
         );
