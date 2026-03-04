@@ -29,10 +29,7 @@ class _CaregiverHomeState extends State<CaregiverHome> {
   @override
   void initState() {
     super.initState();
-<<<<<<< HEAD
     // Load linked patients from Firestore when caregiver portal opens
-=======
->>>>>>> 00a25ba (flutter fix)
     CaregiverStore().loadFromFirestore();
   }
 
@@ -55,7 +52,9 @@ class _CaregiverHomeState extends State<CaregiverHome> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: const Border(top: BorderSide(color: Color(0xFFE2E8F0), width: 1)),
+        border: const Border(
+          top: BorderSide(color: Color(0xFFE2E8F0), width: 1),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -71,11 +70,36 @@ class _CaregiverHomeState extends State<CaregiverHome> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _navItem(0, Icons.dashboard_rounded, Icons.dashboard_outlined, 'Overview'),
-              _navItem(1, Icons.people_rounded, Icons.people_outlined, 'Patients'),
-              _navItem(2, Icons.notifications_active_rounded, Icons.notifications_outlined, 'Alerts'),
-              _navItem(3, Icons.bar_chart_rounded, Icons.bar_chart_outlined, 'Analytics'),
-              _navItem(4, Icons.person_rounded, Icons.person_outlined, 'Profile'),
+              _navItem(
+                0,
+                Icons.dashboard_rounded,
+                Icons.dashboard_outlined,
+                'Overview',
+              ),
+              _navItem(
+                1,
+                Icons.people_rounded,
+                Icons.people_outlined,
+                'Patients',
+              ),
+              _navItem(
+                2,
+                Icons.notifications_active_rounded,
+                Icons.notifications_outlined,
+                'Alerts',
+              ),
+              _navItem(
+                3,
+                Icons.bar_chart_rounded,
+                Icons.bar_chart_outlined,
+                'Analytics',
+              ),
+              _navItem(
+                4,
+                Icons.person_rounded,
+                Icons.person_outlined,
+                'Profile',
+              ),
             ],
           ),
         ),
@@ -95,7 +119,9 @@ class _CaregiverHomeState extends State<CaregiverHome> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: sel ? const Color(0xFF135BEC).withValues(alpha: 0.1) : Colors.transparent,
+                color: sel
+                    ? const Color(0xFF135BEC).withValues(alpha: 0.1)
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(

@@ -3,12 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
-<<<<<<< Updated upstream
-=======
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/theme_provider.dart';
->>>>>>> Stashed changes
 import '../services/medication_store.dart';
 import '../services/firestore_service.dart';
 import 'settings/notifications_page.dart';
@@ -52,14 +49,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _age = '--';
   String _weight = '--';
   String _height = '--';
-<<<<<<< Updated upstream
-  String _patientId = 'PC-...';
-  String _role = 'patient';
-  bool _dataLoading = true;
-=======
   String _patientId = 'PC-GUEST';
   bool _isLoadingProfile = true;
->>>>>>> Stashed changes
 
   // ─── Caregiver Data ───
   List<CaregiverContact> _caregivers = [];
@@ -86,56 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       duration: const Duration(milliseconds: 300),
     );
 
-<<<<<<< Updated upstream
-    _loadUserData();
-  }
-
-  Future<void> _loadUserData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      if (mounted) setState(() => _dataLoading = false);
-      return;
-    }
-    try {
-      final data = await FirestoreService().getUserData();
-      if (data != null && mounted) {
-        final h = data['height']?.toString() ?? '';
-        final w = data['weight']?.toString() ?? '';
-        double bmi = 0.0;
-        String bmiStatus = '--';
-        final hNum = double.tryParse(h);
-        final wNum = double.tryParse(w);
-        if (hNum != null && wNum != null && hNum > 0) {
-          final hm = hNum / 100;
-          bmi = wNum / (hm * hm);
-          if (bmi < 18.5) bmiStatus = 'Underweight';
-          else if (bmi < 25) bmiStatus = 'Normal';
-          else if (bmi < 30) bmiStatus = 'Overweight';
-          else bmiStatus = 'Obese';
-        }
-        final cgName = data['caregiverName']?.toString() ?? '';
-        final cgEmail = data['caregiverEmail']?.toString() ?? '';
-        setState(() {
-          _name = data['name']?.toString() ?? '';
-          _email = data['email']?.toString() ?? '';
-          _phone = data['phone']?.toString() ?? '';
-          _height = h.isEmpty ? '--' : h;
-          _weight = w.isEmpty ? '--' : w;
-          _role = data['role']?.toString() ?? 'patient';
-          _patientId = 'PC-${uid.substring(0, 6).toUpperCase()}';
-          _bmiValue = bmi;
-          _bmiStatus = bmiStatus;
-          if (cgName.isNotEmpty) {
-            _caregivers = [CaregiverContact(cgName, 'CAREGIVER', cgEmail)];
-          }
-          _dataLoading = false;
-        });
-      } else if (mounted) {
-        setState(() => _dataLoading = false);
-      }
-    } catch (e) {
-      if (mounted) setState(() => _dataLoading = false);
-=======
     _loadUserProfile();
   }
 
@@ -190,7 +131,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             FirebaseFirestore.instance
                 .collection('users')
                 .doc(user.uid)
-                .update({'patientId': _patientId}).catchError((_) {});
+                .update({'patientId': _patientId})
+                .catchError((_) {});
           }
 
           // Caregiver details
@@ -238,7 +180,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     final heightNum = double.tryParse(_height);
     if (weightNum != null && heightNum != null && heightNum > 0) {
       final heightM = heightNum / 100;
-      _bmiValue = double.parse((weightNum / (heightM * heightM)).toStringAsFixed(1));
+      _bmiValue = double.parse(
+        (weightNum / (heightM * heightM)).toStringAsFixed(1),
+      );
       if (_bmiValue < 18.5) {
         _bmiStatus = 'Underweight';
       } else if (_bmiValue < 25) {
@@ -251,7 +195,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     } else {
       _bmiValue = 0.0;
       _bmiStatus = '--';
->>>>>>> Stashed changes
     }
   }
 
@@ -327,10 +270,13 @@ class _ProfileScreenState extends State<ProfileScreen>
                         child: _buildCaregiverCard(e.key, glow),
                       );
                     }),
-                    
+
                     // Add Emergency Contact Button
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 8,
+                      ),
                       child: GestureDetector(
                         onTap: () => _openEditCaregiverSheet(null),
                         child: Container(
@@ -339,12 +285,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                           decoration: BoxDecoration(
                             color: const Color(0xFFEFF6FF),
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFBFDBFE).withValues(alpha: 0.5)),
+                            border: Border.all(
+                              color: const Color(
+                                0xFFBFDBFE,
+                              ).withValues(alpha: 0.5),
+                            ),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Icon(Icons.add_circle_outline_rounded, color: Color(0xFF135BEC), size: 20),
+                              const Icon(
+                                Icons.add_circle_outline_rounded,
+                                color: Color(0xFF135BEC),
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               Text(
                                 'Add Emergency Contact',
@@ -399,11 +353,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               ),
 
               // ── Floating Support Chat ──
-              Positioned(
-                bottom: 90,
-                right: 20,
-                child: _buildSupportFAB(glow),
-              ),
+              Positioned(bottom: 90, right: 20, child: _buildSupportFAB(glow)),
             ],
           ),
         );
@@ -433,8 +383,9 @@ class _ProfileScreenState extends State<ProfileScreen>
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF135BEC)
-                    .withValues(alpha: 0.04 + glow * 0.02),
+                color: const Color(
+                  0xFF135BEC,
+                ).withValues(alpha: 0.04 + glow * 0.02),
                 blurRadius: 20 + glow * 6,
                 offset: const Offset(0, 6),
               ),
@@ -460,8 +411,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(color: const Color(0xFFE2E8F0)),
                     ),
-                    child: const Icon(Icons.edit_outlined,
-                        size: 16, color: Color(0xFF64748B)),
+                    child: const Icon(
+                      Icons.edit_outlined,
+                      size: 16,
+                      color: Color(0xFF64748B),
+                    ),
                   ),
                 ),
               ),
@@ -472,11 +426,15 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: AnimatedBuilder(
                   animation: _avatarBounceController,
                   builder: (context, child) {
-                    final scale = 1.0 -
+                    final scale =
+                        1.0 -
                         _avatarBounceController.value * 0.08 +
                         _avatarBounceController.value * 0.08;
                     return Transform.scale(
-                      scale: 1.0 + math.sin(_avatarBounceController.value * math.pi) * 0.05,
+                      scale:
+                          1.0 +
+                          math.sin(_avatarBounceController.value * math.pi) *
+                              0.05,
                       child: child,
                     );
                   },
@@ -488,16 +446,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color.lerp(const Color(0xFFBFDBFE),
-                              const Color(0xFFC4B5FD), glow)!,
-                          Color.lerp(const Color(0xFFC4B5FD),
-                              const Color(0xFFBFDBFE), glow)!,
+                          Color.lerp(
+                            const Color(0xFFBFDBFE),
+                            const Color(0xFFC4B5FD),
+                            glow,
+                          )!,
+                          Color.lerp(
+                            const Color(0xFFC4B5FD),
+                            const Color(0xFFBFDBFE),
+                            glow,
+                          )!,
                         ],
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF7C3AED)
-                              .withValues(alpha: 0.12 + glow * 0.08),
+                          color: const Color(
+                            0xFF7C3AED,
+                          ).withValues(alpha: 0.12 + glow * 0.08),
                           blurRadius: 12 + glow * 6,
                           spreadRadius: -2,
                         ),
@@ -532,7 +497,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 children: [
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 5),
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF16A34A).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -563,7 +530,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       ),
                       backgroundColor: const Color(0xFF135BEC),
                       behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                       duration: const Duration(seconds: 3),
                     ),
                   );
@@ -588,8 +557,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.fingerprint_rounded,
-                              size: 18, color: const Color(0xFF135BEC)),
+                          Icon(
+                            Icons.fingerprint_rounded,
+                            size: 18,
+                            color: const Color(0xFF135BEC),
+                          ),
                           const SizedBox(width: 6),
                           Text(
                             'YOUR PATIENT ID',
@@ -616,8 +588,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.copy_rounded,
-                              size: 12, color: const Color(0xFF94A3B8)),
+                          Icon(
+                            Icons.copy_rounded,
+                            size: 12,
+                            color: const Color(0xFF94A3B8),
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             'Tap to copy',
@@ -628,14 +603,23 @@ class _ProfileScreenState extends State<ProfileScreen>
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Text('•', style: TextStyle(color: const Color(0xFF94A3B8), fontSize: 10)),
+                          Text(
+                            '•',
+                            style: TextStyle(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: 10,
+                            ),
+                          ),
                           const SizedBox(width: 8),
                           GestureDetector(
                             onTap: () => _showQRCodeDialog(),
                             child: Row(
                               children: [
-                                Icon(Icons.qr_code_2_rounded,
-                                    size: 12, color: const Color(0xFF135BEC)),
+                                Icon(
+                                  Icons.qr_code_2_rounded,
+                                  size: 12,
+                                  color: const Color(0xFF135BEC),
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Show QR Code',
@@ -660,22 +644,31 @@ class _ProfileScreenState extends State<ProfileScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  _buildStatChip(Icons.accessibility_new_rounded, 'AGE',
-                      '$_age yrs', const Color(0xFF135BEC)),
+                  _buildStatChip(
+                    Icons.accessibility_new_rounded,
+                    'AGE',
+                    '$_age yrs',
+                    const Color(0xFF135BEC),
+                  ),
                   const SizedBox(width: 12),
-                  _buildStatChip(Icons.monitor_weight_outlined, 'WEIGHT',
-                      '$_weight kg', const Color(0xFF7C3AED)),
+                  _buildStatChip(
+                    Icons.monitor_weight_outlined,
+                    'WEIGHT',
+                    '$_weight kg',
+                    const Color(0xFF7C3AED),
+                  ),
                   const SizedBox(width: 12),
-                  _buildStatChip(Icons.height_rounded, 'HEIGHT',
-                      '$_height cm', const Color(0xFF0891B2)),
+                  _buildStatChip(
+                    Icons.height_rounded,
+                    'HEIGHT',
+                    '$_height cm',
+                    const Color(0xFF0891B2),
+                  ),
                 ],
               ),
               const SizedBox(height: 18),
               // Divider
-              Container(
-                height: 1,
-                color: const Color(0xFFF1F5F9),
-              ),
+              Container(height: 1, color: const Color(0xFFF1F5F9)),
               const SizedBox(height: 14),
 
               // Contact info rows
@@ -707,7 +700,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildStatChip(
-      IconData icon, String label, String value, Color color) {
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
@@ -789,7 +786,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ═══════════════════════════════════════════════════════════════
   Widget _buildNotificationToggle(double glow) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsPage())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const NotificationsPage()),
+      ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20),
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -814,8 +814,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 color: const Color(0xFFF8FAFC),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.notifications_outlined,
-                  size: 20, color: Color(0xFF64748B)),
+              child: const Icon(
+                Icons.notifications_outlined,
+                size: 20,
+                color: Color(0xFF64748B),
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -847,8 +850,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                   boxShadow: _notificationsOn
                       ? [
                           BoxShadow(
-                            color: const Color(0xFF135BEC)
-                                .withValues(alpha: 0.25 + glow * 0.15),
+                            color: const Color(
+                              0xFF135BEC,
+                            ).withValues(alpha: 0.25 + glow * 0.15),
                             blurRadius: 8 + glow * 4,
                             spreadRadius: -1,
                           ),
@@ -884,6 +888,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       ),
     );
   }
+
   // ═══════════════════════════════════════════════════════════════
   //  DARK MODE TOGGLE
   // ═══════════════════════════════════════════════════════════════
@@ -951,8 +956,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 boxShadow: themeProvider.isDark
                     ? [
                         BoxShadow(
-                          color: const Color(0xFF7C3AED)
-                              .withValues(alpha: 0.25 + glow * 0.15),
+                          color: const Color(
+                            0xFF7C3AED,
+                          ).withValues(alpha: 0.25 + glow * 0.15),
                           blurRadius: 8 + glow * 4,
                           spreadRadius: -1,
                         ),
@@ -1002,78 +1008,85 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ═══════════════════════════════════════════════════════════════
   Widget _buildSmartDispenserCard(double glow) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmartDispenserPage())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const SmartDispenserPage()),
+      ),
       child: Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(12),
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFF1F5F9)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
-            child: const Icon(Icons.bluetooth,
-                size: 20, color: Color(0xFF135BEC)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              'Smart Dispenser',
-              style: GoogleFonts.manrope(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF1E293B),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.bluetooth,
+                size: 20,
+                color: Color(0xFF135BEC),
               ),
             ),
-          ),
-          // Active badge
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8,
-                height: 8,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16A34A),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF16A34A)
-                          .withValues(alpha: 0.3 + glow * 0.2),
-                      blurRadius: 4 + glow * 3,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 6),
-              Text(
-                'Active',
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                'Smart Dispenser',
                 style: GoogleFonts.manrope(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF16A34A),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1E293B),
                 ),
               ),
-            ],
-          ),
-        ],
+            ),
+            // Active badge
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF16A34A),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(
+                          0xFF16A34A,
+                        ).withValues(alpha: 0.3 + glow * 0.2),
+                        blurRadius: 4 + glow * 3,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Active',
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF16A34A),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
-    ),
     );
   }
 
@@ -1082,10 +1095,26 @@ class _ProfileScreenState extends State<ProfileScreen>
   // ═══════════════════════════════════════════════════════════════
   List<Widget> _buildMenuItems() {
     final items = [
-      _MenuItem(Icons.calendar_month_outlined, 'Medication Schedule', const MedicationSchedulePage()),
-      _MenuItem(Icons.shield_outlined, 'Privacy & Security', const PrivacySecurityPage()),
-      _MenuItem(Icons.help_outline_rounded, 'Help & Support', const HelpSupportPage()),
-      _MenuItem(Icons.info_outline_rounded, 'About PillCare', const AboutPage()),
+      _MenuItem(
+        Icons.calendar_month_outlined,
+        'Medication Schedule',
+        const MedicationSchedulePage(),
+      ),
+      _MenuItem(
+        Icons.shield_outlined,
+        'Privacy & Security',
+        const PrivacySecurityPage(),
+      ),
+      _MenuItem(
+        Icons.help_outline_rounded,
+        'Help & Support',
+        const HelpSupportPage(),
+      ),
+      _MenuItem(
+        Icons.info_outline_rounded,
+        'About PillCare',
+        const AboutPage(),
+      ),
     ];
 
     return items.asMap().entries.map((entry) {
@@ -1121,10 +1150,15 @@ class _ProfileScreenState extends State<ProfileScreen>
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(18),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.page)),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => item.page),
+              ),
               child: Padding(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 18, vertical: 16),
+                  horizontal: 18,
+                  vertical: 16,
+                ),
                 child: Row(
                   children: [
                     Container(
@@ -1134,8 +1168,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         color: const Color(0xFFF8FAFC),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: Icon(item.icon,
-                          size: 20, color: const Color(0xFF64748B)),
+                      child: Icon(
+                        item.icon,
+                        size: 20,
+                        color: const Color(0xFF64748B),
+                      ),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
@@ -1148,8 +1185,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                         ),
                       ),
                     ),
-                    const Icon(Icons.chevron_right_rounded,
-                        color: Color(0xFFCBD5E1), size: 22),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFFCBD5E1),
+                      size: 22,
+                    ),
                   ],
                 ),
               ),
@@ -1179,8 +1219,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               color: const Color(0xFFFEF2F2),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFFFECACA)
-                    .withValues(alpha: 0.6 + glow * 0.2),
+                color: const Color(
+                  0xFFFECACA,
+                ).withValues(alpha: 0.6 + glow * 0.2),
               ),
             ),
             child: Row(
@@ -1189,8 +1230,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                 Icon(
                   Icons.logout_rounded,
                   size: 18,
-                  color: const Color(0xFFDC2626)
-                      .withValues(alpha: 0.8 + glow * 0.2),
+                  color: const Color(
+                    0xFFDC2626,
+                  ).withValues(alpha: 0.8 + glow * 0.2),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1225,8 +1267,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color:
-                const Color(0xFF7C3AED).withValues(alpha: 0.25 + glow * 0.15),
+            color: const Color(
+              0xFF7C3AED,
+            ).withValues(alpha: 0.25 + glow * 0.15),
             blurRadius: 14 + glow * 6,
             spreadRadius: -1,
             offset: const Offset(0, 4),
@@ -1239,8 +1282,11 @@ class _ProfileScreenState extends State<ProfileScreen>
           borderRadius: BorderRadius.circular(26),
           onTap: () {},
           child: const Center(
-            child:
-                Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 22),
+            child: Icon(
+              Icons.chat_bubble_rounded,
+              color: Colors.white,
+              size: 22,
+            ),
           ),
         ),
       ),
@@ -1280,7 +1326,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   color: Color(0xFFFEF2F2),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.favorite_border, color: Color(0xFFEF4444)),
+                child: const Icon(
+                  Icons.favorite_border,
+                  color: Color(0xFFEF4444),
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -1316,7 +1365,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.edit_outlined, size: 16, color: Color(0xFF135BEC)),
+                  child: const Icon(
+                    Icons.edit_outlined,
+                    size: 16,
+                    color: Color(0xFF135BEC),
+                  ),
                 ),
               ),
             ],
@@ -1352,7 +1405,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Calling ${caregiver.name}...')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Calling ${caregiver.name}...')),
+                    );
                   },
                   icon: const Icon(Icons.phone_outlined, size: 16),
                   label: const Text('CALL', maxLines: 1),
@@ -1360,9 +1415,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     backgroundColor: const Color(0xFF135BEC),
                     foregroundColor: Colors.white,
                     elevation: 0,
-                    textStyle: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: GoogleFonts.manrope(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -1370,7 +1433,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alert SMS Sent!')));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Alert SMS Sent!')),
+                    );
                   },
                   icon: const Icon(Icons.warning_amber_rounded, size: 16),
                   label: const Text('ALERT SMS', maxLines: 1),
@@ -1378,9 +1443,17 @@ class _ProfileScreenState extends State<ProfileScreen>
                     backgroundColor: const Color(0xFFFEF2F2),
                     foregroundColor: const Color(0xFFDC2626),
                     elevation: 0,
-                    textStyle: GoogleFonts.manrope(fontSize: 10, fontWeight: FontWeight.w800),
-                    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    textStyle: GoogleFonts.manrope(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 14,
+                      horizontal: 4,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                 ),
               ),
@@ -1421,7 +1494,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   ),
                 ],
               ),
-              child: const Icon(Icons.monitor_heart_outlined, color: Color(0xFF22C55E)),
+              child: const Icon(
+                Icons.monitor_heart_outlined,
+                color: Color(0xFF22C55E),
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -1472,7 +1548,9 @@ class _ProfileScreenState extends State<ProfileScreen>
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF22C55E).withValues(alpha: 0.3)),
+                border: Border.all(
+                  color: const Color(0xFF22C55E).withValues(alpha: 0.3),
+                ),
               ),
               child: Text(
                 _bmiStatus,
@@ -1513,7 +1591,10 @@ class _ProfileScreenState extends State<ProfileScreen>
             children: [
               // Header
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
@@ -1523,7 +1604,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.qr_code_2_rounded, size: 18, color: Colors.white),
+                    const Icon(
+                      Icons.qr_code_2_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       'YOUR PATIENT QR CODE',
@@ -1552,11 +1637,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                   version: QrVersions.auto,
                   size: 200,
                   eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.roundedOuter,
+                    eyeShape: QrEyeShape.square,
                     color: Color(0xFF135BEC),
                   ),
                   dataModuleStyle: const QrDataModuleStyle(
-                    dataModuleShape: QrDataModuleShape.roundedOuter,
+                    dataModuleShape: QrDataModuleShape.square,
                     color: Color(0xFF1E293B),
                   ),
                 ),
@@ -1594,19 +1679,30 @@ class _ProfileScreenState extends State<ProfileScreen>
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Copied $_patientId',
-                                style: GoogleFonts.manrope(fontWeight: FontWeight.w600)),
+                            content: Text(
+                              'Copied $_patientId',
+                              style: GoogleFonts.manrope(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                             backgroundColor: const Color(0xFF135BEC),
                             behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                         );
                       },
                       icon: const Icon(Icons.copy_rounded, size: 16),
-                      label: Text('Copy ID', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                      label: Text(
+                        'Copy ID',
+                        style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                      ),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         side: const BorderSide(color: Color(0xFFE2E8F0)),
                       ),
                     ),
@@ -1619,9 +1715,14 @@ class _ProfileScreenState extends State<ProfileScreen>
                         backgroundColor: const Color(0xFF135BEC),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                      child: Text('Close', style: GoogleFonts.manrope(fontWeight: FontWeight.w700)),
+                      child: Text(
+                        'Close',
+                        style: GoogleFonts.manrope(fontWeight: FontWeight.w700),
+                      ),
                     ),
                   ),
                 ],
@@ -1635,8 +1736,12 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   void _openEditCaregiverSheet(int? index) {
     bool isNew = index == null;
-    final nameCtrl = TextEditingController(text: isNew ? '' : _caregivers[index].name);
-    final phoneCtrl = TextEditingController(text: isNew ? '' : _caregivers[index].phone);
+    final nameCtrl = TextEditingController(
+      text: isNew ? '' : _caregivers[index].name,
+    );
+    final phoneCtrl = TextEditingController(
+      text: isNew ? '' : _caregivers[index].phone,
+    );
     String selectedRelation = isNew ? 'PARENT' : _caregivers[index].relation;
 
     showModalBottomSheet(
@@ -1657,32 +1762,73 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  Text(isNew ? 'Add Caregiver' : 'Edit Caregiver', style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+                  Text(
+                    isNew ? 'Add Caregiver' : 'Edit Caregiver',
+                    style: GoogleFonts.manrope(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  
+
                   TextField(
                     controller: nameCtrl,
-                    decoration: InputDecoration(labelText: 'Caregiver Name', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    decoration: InputDecoration(
+                      labelText: 'Caregiver Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: phoneCtrl,
                     keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    decoration: InputDecoration(
+                      labelText: 'Phone Number',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
-                    value: ['PARENT', 'SPOUSE', 'SIBLING', 'GUARDIAN', 'OTHER'].contains(selectedRelation) ? selectedRelation : 'OTHER',
-                    decoration: InputDecoration(labelText: 'Relationship', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
-                    items: ['PARENT', 'SPOUSE', 'SIBLING', 'GUARDIAN', 'OTHER'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                    value:
+                        [
+                          'PARENT',
+                          'SPOUSE',
+                          'SIBLING',
+                          'GUARDIAN',
+                          'OTHER',
+                        ].contains(selectedRelation)
+                        ? selectedRelation
+                        : 'OTHER',
+                    decoration: InputDecoration(
+                      labelText: 'Relationship',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    items: ['PARENT', 'SPOUSE', 'SIBLING', 'GUARDIAN', 'OTHER']
+                        .map((r) => DropdownMenuItem(value: r, child: Text(r)))
+                        .toList(),
                     onChanged: (val) {
-                      if (val != null) setSheetState(() => selectedRelation = val);
+                      if (val != null)
+                        setSheetState(() => selectedRelation = val);
                     },
                   ),
                   const SizedBox(height: 28),
-                  
+
                   // Wrap delete button and save button in a row if editing
                   if (!isNew)
                     Row(
@@ -1696,12 +1842,21 @@ class _ProfileScreenState extends State<ProfileScreen>
                               Navigator.pop(ctx);
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFFEF2F2), foregroundColor: const Color(0xFFDC2626),
+                              backgroundColor: const Color(0xFFFEF2F2),
+                              foregroundColor: const Color(0xFFDC2626),
                               minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                               elevation: 0,
                             ),
-                            child: Text('Delete', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                            child: Text(
+                              'Delete',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1710,7 +1865,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           child: ElevatedButton(
                             onPressed: () async {
                               setState(() {
-                                _caregivers[index] = CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text);
+                                _caregivers[index] = CaregiverContact(
+                                  nameCtrl.text,
+                                  selectedRelation,
+                                  phoneCtrl.text,
+                                );
                               });
                               Navigator.pop(ctx);
                               _triggerSaveSparkle();
@@ -1722,11 +1881,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                               } catch (_) {}
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF135BEC), foregroundColor: Colors.white,
+                              backgroundColor: const Color(0xFF135BEC),
+                              foregroundColor: Colors.white,
                               minimumSize: const Size(double.infinity, 50),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
                             ),
-                            child: Text('Save', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                            child: Text(
+                              'Save',
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -1734,9 +1902,16 @@ class _ProfileScreenState extends State<ProfileScreen>
                   else
                     ElevatedButton(
                       onPressed: () async {
-                        if (nameCtrl.text.isNotEmpty && phoneCtrl.text.isNotEmpty) {
+                        if (nameCtrl.text.isNotEmpty &&
+                            phoneCtrl.text.isNotEmpty) {
                           setState(() {
-                            _caregivers.add(CaregiverContact(nameCtrl.text, selectedRelation, phoneCtrl.text));
+                            _caregivers.add(
+                              CaregiverContact(
+                                nameCtrl.text,
+                                selectedRelation,
+                                phoneCtrl.text,
+                              ),
+                            );
                           });
                           Navigator.pop(ctx);
                           _triggerSaveSparkle();
@@ -1749,11 +1924,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF135BEC), foregroundColor: Colors.white,
+                        backgroundColor: const Color(0xFF135BEC),
+                        foregroundColor: Colors.white,
                         minimumSize: const Size(double.infinity, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                       ),
-                      child: Text('Add Caregiver', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                      child: Text(
+                        'Add Caregiver',
+                        style: GoogleFonts.manrope(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -1765,8 +1949,12 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _openEditBMISheet() {
-    final weightCtrl = TextEditingController(text: _weight == '--' ? '' : _weight);
-    final heightCtrl = TextEditingController(text: _height == '--' ? '' : _height);
+    final weightCtrl = TextEditingController(
+      text: _weight == '--' ? '' : _weight,
+    );
+    final heightCtrl = TextEditingController(
+      text: _height == '--' ? '' : _height,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -1786,33 +1974,61 @@ class _ProfileScreenState extends State<ProfileScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(width: 40, height: 4, decoration: BoxDecoration(color: const Color(0xFFE2E8F0), borderRadius: BorderRadius.circular(2))),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE2E8F0),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  Text('Update BMI Info', style: GoogleFonts.manrope(fontSize: 20, fontWeight: FontWeight.w800, color: const Color(0xFF1E293B))),
+                  Text(
+                    'Update BMI Info',
+                    style: GoogleFonts.manrope(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w800,
+                      color: const Color(0xFF1E293B),
+                    ),
+                  ),
                   const SizedBox(height: 24),
-                  
+
                   TextField(
                     controller: heightCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'Height (cm)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    decoration: InputDecoration(
+                      labelText: 'Height (cm)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: weightCtrl,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: 'Weight (kg)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    decoration: InputDecoration(
+                      labelText: 'Weight (kg)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 28),
                   ElevatedButton(
                     onPressed: () async {
                       final h = double.tryParse(heightCtrl.text);
                       final w = double.tryParse(weightCtrl.text);
-                      final newH = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
-                      final newW = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
+                      final newH = heightCtrl.text.isEmpty
+                          ? '--'
+                          : heightCtrl.text;
+                      final newW = weightCtrl.text.isEmpty
+                          ? '--'
+                          : weightCtrl.text;
                       setState(() {
                         _height = newH;
                         _weight = newW;
-                        
+
                         if (h != null && w != null && h > 0) {
                           final hMeters = h / 100;
                           _bmiValue = w / (hMeters * hMeters);
@@ -1837,11 +2053,20 @@ class _ProfileScreenState extends State<ProfileScreen>
                       } catch (_) {}
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF22C55E), foregroundColor: Colors.white,
+                      backgroundColor: const Color(0xFF22C55E),
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    child: Text('Calculate & Save', style: GoogleFonts.manrope(fontSize: 14, fontWeight: FontWeight.w700)),
+                    child: Text(
+                      'Calculate & Save',
+                      style: GoogleFonts.manrope(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -1861,10 +2086,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     final emailCtrl = TextEditingController(text: _email);
     final phoneCtrl = TextEditingController(text: _phone);
     final ageCtrl = TextEditingController(text: _age == '--' ? '' : _age);
-    final weightCtrl =
-        TextEditingController(text: _weight == '--' ? '' : _weight);
-    final heightCtrl =
-        TextEditingController(text: _height == '--' ? '' : _height);
+    final weightCtrl = TextEditingController(
+      text: _weight == '--' ? '' : _weight,
+    );
+    final heightCtrl = TextEditingController(
+      text: _height == '--' ? '' : _height,
+    );
 
     showModalBottomSheet(
       context: context,
@@ -1886,25 +2113,6 @@ class _ProfileScreenState extends State<ProfileScreen>
             final newWeight = weightCtrl.text.isEmpty ? '--' : weightCtrl.text;
             final newHeight = heightCtrl.text.isEmpty ? '--' : heightCtrl.text;
             setState(() {
-<<<<<<< Updated upstream
-              _name = newName;
-              _email = newEmail;
-              _phone = newPhone;
-              _age = newAge;
-              _weight = newWeight;
-              _height = newHeight;
-            });
-            Navigator.pop(ctx);
-            _triggerSaveSparkle();
-            try {
-              await FirestoreService().updateUserProfile({
-                'name': newName,
-                'phone': newPhone,
-                'height': newHeight == '--' ? '' : newHeight,
-                'weight': newWeight == '--' ? '' : newWeight,
-              });
-            } catch (_) {}
-=======
               _name = nameCtrl.text.isEmpty ? 'Guest User' : nameCtrl.text;
               _email = emailCtrl.text.isEmpty
                   ? 'guest@pillcare.com'
@@ -1922,7 +2130,6 @@ class _ProfileScreenState extends State<ProfileScreen>
 
             // Persist changes to Firestore
             _saveProfileToFirestore();
->>>>>>> Stashed changes
           },
           onCancel: () => Navigator.pop(ctx),
         );
@@ -1940,13 +2147,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           .collection('users')
           .doc(user.uid)
           .update({
-        'name': _name,
-        'email': _email,
-        'phone': _phone,
-        'age': _age,
-        'height': _height,
-        'weight': _weight,
-      });
+            'name': _name,
+            'email': _email,
+            'phone': _phone,
+            'age': _age,
+            'height': _height,
+            'weight': _weight,
+          });
     } catch (e) {
       debugPrint('Error saving profile: $e');
     }
@@ -2042,33 +2249,60 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
                   const SizedBox(height: 24),
 
                   // Fields
-                  _gradientField('Full Name', widget.nameCtrl,
-                      Icons.person_outline, pulse),
+                  _gradientField(
+                    'Full Name',
+                    widget.nameCtrl,
+                    Icons.person_outline,
+                    pulse,
+                  ),
                   const SizedBox(height: 14),
-                  _gradientField('Email Address', widget.emailCtrl,
-                      Icons.email_outlined, pulse),
+                  _gradientField(
+                    'Email Address',
+                    widget.emailCtrl,
+                    Icons.email_outlined,
+                    pulse,
+                  ),
                   const SizedBox(height: 14),
-                  _gradientField('Phone Number', widget.phoneCtrl,
-                      Icons.phone_outlined, pulse),
+                  _gradientField(
+                    'Phone Number',
+                    widget.phoneCtrl,
+                    Icons.phone_outlined,
+                    pulse,
+                  ),
                   const SizedBox(height: 14),
 
                   // Row: Age, Weight, Height
                   Row(
                     children: [
                       Expanded(
-                          child: _gradientField(
-                              'Age', widget.ageCtrl, null, pulse,
-                              suffix: 'yrs')),
+                        child: _gradientField(
+                          'Age',
+                          widget.ageCtrl,
+                          null,
+                          pulse,
+                          suffix: 'yrs',
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
-                          child: _gradientField(
-                              'Weight', widget.weightCtrl, null, pulse,
-                              suffix: 'kg')),
+                        child: _gradientField(
+                          'Weight',
+                          widget.weightCtrl,
+                          null,
+                          pulse,
+                          suffix: 'kg',
+                        ),
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
-                          child: _gradientField(
-                              'Height', widget.heightCtrl, null, pulse,
-                              suffix: 'cm')),
+                        child: _gradientField(
+                          'Height',
+                          widget.heightCtrl,
+                          null,
+                          pulse,
+                          suffix: 'cm',
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -2086,7 +2320,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
                               color: const Color(0xFFF8FAFC),
                               borderRadius: BorderRadius.circular(14),
                               border: Border.all(
-                                  color: const Color(0xFFE2E8F0)),
+                                color: const Color(0xFFE2E8F0),
+                              ),
                             ),
                             child: Center(
                               child: Text(
@@ -2111,16 +2346,14 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
                             height: 48,
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF135BEC),
-                                  Color(0xFF7C3AED)
-                                ],
+                                colors: [Color(0xFF135BEC), Color(0xFF7C3AED)],
                               ),
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF135BEC).withValues(
-                                      alpha: 0.2 + pulse * 0.1),
+                                  color: const Color(
+                                    0xFF135BEC,
+                                  ).withValues(alpha: 0.2 + pulse * 0.1),
                                   blurRadius: 10 + pulse * 4,
                                   offset: const Offset(0, 4),
                                 ),
@@ -2130,8 +2363,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  const Icon(Icons.check_circle_outline,
-                                      color: Colors.white, size: 18),
+                                  const Icon(
+                                    Icons.check_circle_outline,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Save Changes',
@@ -2159,8 +2395,12 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
   }
 
   Widget _gradientField(
-      String label, TextEditingController ctrl, IconData? icon, double pulse,
-      {String? suffix}) {
+    String label,
+    TextEditingController ctrl,
+    IconData? icon,
+    double pulse, {
+    String? suffix,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -2178,8 +2418,11 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Color.lerp(const Color(0xFFE2E8F0),
-                  const Color(0xFFBFDBFE), pulse * 0.3)!,
+              color: Color.lerp(
+                const Color(0xFFE2E8F0),
+                const Color(0xFFBFDBFE),
+                pulse * 0.3,
+              )!,
             ),
           ),
           child: TextField(
@@ -2190,8 +2433,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
               color: const Color(0xFF1E293B),
             ),
             decoration: InputDecoration(
-              prefixIcon:
-                  icon != null ? Icon(icon, size: 18, color: const Color(0xFF94A3B8)) : null,
+              prefixIcon: icon != null
+                  ? Icon(icon, size: 18, color: const Color(0xFF94A3B8))
+                  : null,
               suffixText: suffix,
               suffixStyle: GoogleFonts.manrope(
                 fontSize: 12,
@@ -2199,7 +2443,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet>
                 color: const Color(0xFF94A3B8),
               ),
               contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+                horizontal: 14,
+                vertical: 12,
+              ),
               border: InputBorder.none,
               hintText: label,
               hintStyle: GoogleFonts.manrope(
@@ -2243,9 +2489,13 @@ class _SaveSparklePainter extends CustomPainter {
     if (progress < 0.5) {
       final glowProgress = progress * 2;
       final paint = Paint()
-        ..color = const Color(0xFF16A34A).withValues(alpha: (1 - glowProgress) * 0.3)
-        ..maskFilter =
-            MaskFilter.blur(BlurStyle.normal, 20 + glowProgress * 20);
+        ..color = const Color(
+          0xFF16A34A,
+        ).withValues(alpha: (1 - glowProgress) * 0.3)
+        ..maskFilter = MaskFilter.blur(
+          BlurStyle.normal,
+          20 + glowProgress * 20,
+        );
       canvas.drawCircle(Offset(cx, cy), 20 + glowProgress * 30, paint);
     }
 
