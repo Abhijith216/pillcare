@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "782782700061",
+    "project_id": "pillcare-d4193",
+    "storage_bucket": "pillcare-d4193.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:782782700061:android:4f348ba945fb6d6f2f04f4",
+        "android_client_info": {
+          "package_name": "com.example.pillcare"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1JrH2jHB1L0wzswIAGeHP1gmtKuInogk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
